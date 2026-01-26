@@ -56,13 +56,18 @@ async def root() -> Dict[str, str]:
 @app.post("/upload/invoice")
 async def upload_invoice(file: UploadFile = File(...)) -> JSONResponse:
     """
-    Upload and parse an invoice PDF file.
+    Upload and parse an invoice PDF file with enhanced extraction and confidence scores.
+    
+    Returns OCI-like structured response with:
+    - confidence: Overall document confidence score
+    - data: Extracted fields (InvoiceId, VendorName, InvoiceDate, Items, etc.)
+    - predictionTime: Processing time in seconds
     
     Args:
         file (UploadFile): The invoice PDF file to parse.
     
     Returns:
-        JSONResponse: Parsed invoice data in JSON format with metadata and items.
+        JSONResponse: Parsed invoice data with confidence scores.
     
     Raises:
         HTTPException: If file type is invalid or parsing fails.
@@ -91,74 +96,6 @@ async def upload_invoice(file: UploadFile = File(...)) -> JSONResponse:
         result = parser.to_dict()
         
         logger.info(f"Successfully parsed invoice: {file.filename}")
-        return JSONResponse(content=result, status_code=200)
-    
-    except FileNotFoundError as e:
-        logger.error(f"File not found: {str(e)}")
-        raise HTTPException(status_code=404, detail=str(e))
-    
-    except ValueError as e:
-        logger.error(f"Parsing error: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Parsing error: {str(e)}")
-    
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-    
-    finally:
-        # Clean up uploaded file
-        if file_path and os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-                logger.info(f"Cleaned up temporary file: {file_path}")
-            except Exception as e:
-                logger.warning(f"Failed to remove temporary file: {str(e)}")
-
-
-@app.post("/upload/invoice/enhanced")
-async def upload_invoice_enhanced(file: UploadFile = File(...)) -> JSONResponse:
-    """
-    Upload and parse an invoice PDF file with enhanced extraction and confidence scores.
-    
-    Returns OCI-like structured response with:
-    - confidence: Overall document confidence score
-    - data: Extracted fields (InvoiceId, VendorName, InvoiceDate, Items, etc.)
-    - dataConfidence: Confidence score for each field
-    - predictionTime: Processing time in seconds
-    
-    Args:
-        file (UploadFile): The invoice PDF file to parse.
-    
-    Returns:
-        JSONResponse: Enhanced parsed invoice data with confidence scores.
-    
-    Raises:
-        HTTPException: If file type is invalid or parsing fails.
-    """
-    logger.info(f"Received enhanced invoice upload request: {file.filename}")
-    
-    # Validate file type
-    if not file.filename.lower().endswith('.pdf'):
-        logger.error(f"Invalid file type: {file.filename}")
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid file type. Only PDF files are supported."
-        )
-    
-    # Save uploaded file
-    file_path = None
-    try:
-        file_path = UPLOAD_DIR / file.filename
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        logger.info(f"File saved to: {file_path}")
-        
-        # Parse with enhanced parser
-        parser = ParserFactory.get_parser("invoice_enhanced", str(file_path))
-        parser.load_file()
-        result = parser.to_dict()
-        
-        logger.info(f"Successfully parsed enhanced invoice: {file.filename}")
         return JSONResponse(content=result, status_code=200)
     
     except FileNotFoundError as e:

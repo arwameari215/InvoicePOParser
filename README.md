@@ -343,7 +343,6 @@ All errors are logged with detailed information for debugging.
 
 This API is designed to be extensible for:
 
-- ✅ **ERPNext Integration**: Script included (`create_po_erpnext.py`)
 - 🌍 **Multilingual Support**: Parse documents in multiple languages
 - 📦 **Batch Processing**: Upload and parse multiple documents at once
 - 🤖 **ML-based Extraction**: Integrate machine learning models for better accuracy
@@ -351,29 +350,7 @@ This API is designed to be extensible for:
 - 🎯 **Field-level Confidence**: Return confidence for each individual field
 - 📈 **Analytics Dashboard**: Track parsing performance and accuracy
 - 🔐 **Authentication**: Add API key or OAuth2 authentication
-
-## 🔗 ERPNext Integration
-
-An ERPNext integration script is included: `create_po_erpnext.py`
-
-This script:
-- Creates Company master data if not exists
-- Creates Supplier records
-- Creates Item records  
-- Creates Purchase Orders with line items
-- Submits the Purchase Order automatically
-
-**Configuration:**
-```python
-ERPNEXT_URL = "http://localhost:8080"
-API_KEY = "your_api_key"
-API_SECRET = "your_api_secret"
-```
-
-**Usage:**
-```bash
-venv/Scripts/python create_po_erpnext.py
-```
+- ✅ **ERPNext Integration**: Direct API integration with ERPNext
 
 ## 📄 Dependencies
 
