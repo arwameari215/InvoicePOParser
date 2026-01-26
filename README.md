@@ -13,7 +13,6 @@ A standalone Python backend API for parsing **Invoices** and **Purchase Orders (
 - ✅ **Comprehensive logging** for debugging and monitoring
 - ✅ **Unit tests** with mocked data (21/23 passing)
 - ✅ **Production-ready** error handling
-- ✅ **ERPNext integration** script included
 - ✅ **Modular and extensible** design for future enhancements
 
 ## 📁 Project Structure
@@ -34,7 +33,6 @@ InvoicePOParser/
 │   ├── test_po.py                       # Unit tests for PO parser
 │   └── test_api.py                      # API endpoint tests
 ├── venv/                                # Virtual environment
-├── create_po_erpnext.py                 # ERPNext Purchase Order creation script
 ├── requirements.txt                     # Python dependencies
 └── README.md                            # This file
 ```
@@ -350,7 +348,6 @@ This API is designed to be extensible for:
 - 🎯 **Field-level Confidence**: Return confidence for each individual field
 - 📈 **Analytics Dashboard**: Track parsing performance and accuracy
 - 🔐 **Authentication**: Add API key or OAuth2 authentication
-- ✅ **ERPNext Integration**: Direct API integration with ERPNext
 
 ## 📄 Dependencies
 
@@ -363,7 +360,6 @@ This API is designed to be extensible for:
 - **pytest-asyncio**: Async test support (>=0.21.0)
 - **httpx**: HTTP client for testing (>=0.24.0)
 - **python-multipart**: Form data parsing (>=0.0.6)
-- **requests**: HTTP library for ERPNext integration
 
 ## 🤝 Contributing
 
@@ -380,7 +376,7 @@ For issues or questions, please review the code documentation and inline comment
 
 ## 📜 License
 
-This project is designed for internal use and future integration with ERPNext.
+This project is designed for internal use as a document parsing API.
 
 ---
 
