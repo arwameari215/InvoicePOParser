@@ -57,3 +57,8 @@ Thumbs.db
 # Environment variables
 .env
 .env.local
+
+# API Keys - NEVER COMMIT THESE!
+.anthropickey
+*.key
+api_keys/

@@ -1,10 +1,10 @@
 """
-Unit tests for FastAPI endpoints.
+Unit tests for FastAPI endpoints with Claude AI parsing.
 """
 
 import unittest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 import sys
 import os
 from io import BytesIO
@@ -67,20 +67,24 @@ class TestAPIEndpoints(unittest.TestCase):
 
     @patch('app.main.ParserFactory.get_parser')
     def test_upload_invoice_success(self, mock_get_parser):
-        """Test successful invoice upload."""
-        # Mock parser
+        """Test successful invoice upload with Claude AI."""
+        # Mock Claude AI parser with legacy format
         mock_parser = Mock()
-        mock_parser.to_dict.return_value = {
-            "metadata": {
-                "invoice_number": "INV123",
-                "date": "2026-01-25",
-                "supplier_name": "Test Supplier",
-                "total_amount": 1000.0,
-                "tax": 180.0
+        mock_parser.parse.return_value = {
+            "confidence": 0.85,
+            "data": {
+                "InvoiceId": "INV123",
+                "VendorName": "Test Supplier",
+                "InvoiceDate": "2026-01-25",
+                "BillingAddressRecipient": None,
+                "ShippingAddress": None,
+                "SubTotal": 850.0,
+                "ShippingCost": 50.0,
+                "InvoiceTotal": 1000.0,
+                "Tax": 100.0,
+                "Items": []
             },
-            "items": [
-                {"description": "Item A", "quantity": 2, "unit_price": 100, "total": 200}
-            ]
+            "predictionTime": 0.5
         }
         mock_get_parser.return_value = mock_parser
         
@@ -90,26 +94,30 @@ class TestAPIEndpoints(unittest.TestCase):
         
         response = self.client.post("/upload/invoice", files=files)
         self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIn("metadata", data)
-        self.assertIn("items", data)
+        response_data = response.json()
+        self.assertIn("confidence", response_data)
+        self.assertIn("data", response_data)
+        self.assertIn("InvoiceId", response_data["data"])
 
     @patch('app.main.ParserFactory.get_parser')
     def test_upload_po_success(self, mock_get_parser):
-        """Test successful PO upload."""
-        # Mock parser
+        """Test successful PO upload with Claude AI."""
+        # Mock Claude AI parser
         mock_parser = Mock()
-        mock_parser.to_dict.return_value = {
-            "metadata": {
-                "po_number": "PO123",
-                "date": "2026-01-25",
-                "supplier_name": "Supplier X",
-                "delivery_date": "2026-02-01",
-                "total_amount": 5000.0,
-                "status": "Pending"
-            },
+        mock_parser.parse.return_value = {
+            "po_number": "PO123",
+            "date": "2026-01-25",
+            "supplier_name": "ABC Corp",
+            "delivery_date": "2026-02-01",
+            "total_amount": 5000.0,
+            "status": "Pending",
             "items": [
-                {"description": "Product A", "quantity": 10, "unit_price": 500, "total": 5000}
+                {
+                    "description": "Widget A",
+                    "quantity": 10,
+                    "unit_price": 500.0,
+                    "total": 5000.0
+                }
             ]
         }
         mock_get_parser.return_value = mock_parser
@@ -120,10 +128,11 @@ class TestAPIEndpoints(unittest.TestCase):
         
         response = self.client.post("/upload/po", files=files)
         self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIn("metadata", data)
-        self.assertIn("items", data)
+        response_data = response.json()
+        self.assertIn("items", response_data)
+        self.assertEqual(response_data["po_number"], "PO123")
 
 
 if __name__ == "__main__":
     unittest.main()
+
