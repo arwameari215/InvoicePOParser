@@ -9,7 +9,7 @@ import logging
 import re
 from datetime import datetime
 from .base_claude_parser import BaseClaudeParser
-from config.prompts import get_po_prompts
+from app.config.prompts import get_po_prompts
 
 logger = logging.getLogger(__name__)
 

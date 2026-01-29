@@ -15,9 +15,9 @@ import shutil
 from pathlib import Path
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from parser_factory import ParserFactory
+from app.parser_factory import ParserFactory
 
 # Configure logging
 logging.basicConfig(

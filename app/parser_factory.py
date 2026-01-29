@@ -5,16 +5,11 @@ Uses Anthropic Claude for intelligent document parsing.
 """
 
 import logging
-import sys
-import os
 
-# Add parsers directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'parsers'))
-
-from parsers.base_claude_parser import BaseClaudeParser
-from parsers.invoice_claude_parser import InvoiceClaudeParser
-from parsers.po_claude_parser import PurchaseOrderClaudeParser
-from services.claude_service import ClaudeService
+from app.parsers.base_claude_parser import BaseClaudeParser
+from app.parsers.invoice_claude_parser import InvoiceClaudeParser
+from app.parsers.po_claude_parser import PurchaseOrderClaudeParser
+from app.services.claude_service import ClaudeService
 
 logger = logging.getLogger(__name__)
 
