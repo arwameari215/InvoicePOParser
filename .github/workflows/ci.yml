@@ -1,0 +1,295 @@
+name: CI Pipeline
+
+# ============================================================================
+# TRIGGER CONDITIONS
+# ============================================================================
+# Run on every push to any branch and every pull request
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+# ============================================================================
+# GLOBAL ENVIRONMENT VARIABLES
+# ============================================================================
+env:
+  PYTHON_VERSION: '3.11'
+  API_PORT: 8000
+  HEALTH_CHECK_MAX_ATTEMPTS: 30
+  HEALTH_CHECK_INTERVAL: 2
+
+# ============================================================================
+# CI JOBS
+# ============================================================================
+jobs:
+  # --------------------------------------------------------------------------
+  # JOB: Test Suite
+  # --------------------------------------------------------------------------
+  test:
+    name: Test on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # Fail-fast protection
+    
+    # Optional: Test against multiple Python versions
+    strategy:
+      fail-fast: false  # Continue testing other versions even if one fails
+      matrix:
+        python-version: ['3.10', '3.11']
+    
+    steps:
+      # ======================================================================
+      # STEP 1: Checkout Repository
+      # ======================================================================
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+      
+      # ======================================================================
+      # STEP 2: Set Up Python Environment
+      # ======================================================================
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      # ======================================================================
+      # STEP 3: Cache pip Dependencies
+      # ======================================================================
+      # Speeds up subsequent builds by caching installed packages
+      - name: 📦 Cache pip Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      # ======================================================================
+      # STEP 4: Upgrade pip
+      # ======================================================================
+      - name: ⬆️ Upgrade pip
+        run: |
+          python -m pip install --upgrade pip
+      
+      # ======================================================================
+      # STEP 5: Install Dependencies
+      # ======================================================================
+      - name: 📚 Install Dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      # ======================================================================
+      # STEP 6: Create Dummy API Key File
+      # ======================================================================
+      # Tests use mocks, but the application expects this file to exist
+      # SECURITY: This is a fake key for CI only, never use in production
+      - name: 🔑 Create Dummy Anthropic API Key
+        run: |
+          echo "sk-ant-api03-ci-dummy-key-for-testing-only" > .anthropickey
+          echo "✅ Dummy API key file created (not a real key)"
+      
+      # ======================================================================
+      # STEP 7: Display Python Environment Info
+      # ======================================================================
+      - name: ℹ️ Display Environment Info
+        run: |
+          echo "Python version:"
+          python --version
+          echo ""
+          echo "Pip version:"
+          pip --version
+          echo ""
+          echo "Installed packages:"
+          pip list
+      
+      # ======================================================================
+      # STEP 8: Start FastAPI Server in Background
+      # ======================================================================
+      - name: 🚀 Start FastAPI Server
+        run: |
+          echo "Starting FastAPI server on port ${{ env.API_PORT }}..."
+          nohup python -m uvicorn app.main:app --host 0.0.0.0 --port ${{ env.API_PORT }} > server.log 2>&1 &
+          echo $! > server.pid
+          echo "✅ FastAPI server started with PID: $(cat server.pid)"
+          echo "Server logs will be available in server.log"
+      
+      # ======================================================================
+      # STEP 9: Wait for Server to Be Healthy
+      # ======================================================================
+      # Retry mechanism with exponential backoff to ensure server is ready
+      - name: ⏳ Wait for API Health Check
+        run: |
+          echo "Waiting for API to become healthy..."
+          ATTEMPTS=0
+          MAX_ATTEMPTS=${{ env.HEALTH_CHECK_MAX_ATTEMPTS }}
+          INTERVAL=${{ env.HEALTH_CHECK_INTERVAL }}
+          
+          while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+            ATTEMPTS=$((ATTEMPTS + 1))
+            echo "Attempt $ATTEMPTS/$MAX_ATTEMPTS: Checking health endpoint..."
+            
+            # Try to reach the health endpoint
+            if curl -f -s http://localhost:${{ env.API_PORT }}/health > /dev/null 2>&1; then
+              echo "✅ Health check passed!"
+              echo "Server is ready and responding"
+              exit 0
+            fi
+            
+            echo "⏳ Server not ready yet, waiting ${INTERVAL}s..."
+            sleep $INTERVAL
+          done
+          
+          echo "❌ Health check failed after $MAX_ATTEMPTS attempts"
+          echo "Dumping server logs:"
+          cat server.log || echo "No server logs available"
+          exit 1
+      
+      # ======================================================================
+      # STEP 10: Validate Health Endpoint Response
+      # ======================================================================
+      - name: 🏥 Validate Health Endpoint
+        run: |
+          echo "Validating health endpoint response..."
+          
+          # Call /health endpoint
+          RESPONSE=$(curl -s http://localhost:${{ env.API_PORT }}/health)
+          echo "Health endpoint response: $RESPONSE"
+          
+          # Validate HTTP 200 (already checked in previous step)
+          # Validate JSON structure
+          if echo "$RESPONSE" | grep -q '"status"'; then
+            echo "✅ Health endpoint contains 'status' field"
+          else
+            echo "❌ Health endpoint missing 'status' field"
+            exit 1
+          fi
+          
+          if echo "$RESPONSE" | grep -q '"service"'; then
+            echo "✅ Health endpoint contains 'service' field"
+          else
+            echo "❌ Health endpoint missing 'service' field"
+            exit 1
+          fi
+          
+          # Call root endpoint
+          ROOT_RESPONSE=$(curl -s http://localhost:${{ env.API_PORT }}/)
+          echo "Root endpoint response: $ROOT_RESPONSE"
+          
+          if echo "$ROOT_RESPONSE" | grep -q '"message"'; then
+            echo "✅ Root endpoint contains 'message' field"
+          else
+            echo "❌ Root endpoint missing 'message' field"
+            exit 1
+          fi
+          
+          echo "✅ All health checks passed successfully!"
+      
+      # ======================================================================
+      # STEP 11: Run Test Suite
+      # ======================================================================
+      - name: 🧪 Run Test Suite
+        run: |
+          echo "Running all tests with unittest..."
+          python -m unittest discover -s tests -p "test_*.py" -v
+      
+      # ======================================================================
+      # STEP 12: Display Test Summary
+      # ======================================================================
+      - name: 📊 Test Summary
+        if: always()
+        run: |
+          echo "=========================================="
+          echo "CI Pipeline Summary"
+          echo "=========================================="
+          echo "Python Version: ${{ matrix.python-version }}"
+          echo "OS: ${{ runner.os }}"
+          echo "Runner: ${{ runner.name }}"
+          echo "=========================================="
+      
+      # ======================================================================
+      # STEP 13: Upload Server Logs (on failure)
+      # ======================================================================
+      - name: 📋 Upload Server Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs-python-${{ matrix.python-version }}
+          path: server.log
+          retention-days: 7
+      
+      # ======================================================================
+      # STEP 14: Cleanup Background Process
+      # ======================================================================
+      - name: 🧹 Cleanup Server Process
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            PID=$(cat server.pid)
+            echo "Stopping FastAPI server (PID: $PID)..."
+            kill $PID 2>/dev/null || echo "Server process already stopped"
+            rm server.pid
+            echo "✅ Server process cleaned up"
+          else
+            echo "No server PID file found, skipping cleanup"
+          fi
+          
+          # Display final server logs for debugging
+          if [ -f server.log ]; then
+            echo "Final server log (last 50 lines):"
+            tail -50 server.log
+          fi
+
+  # --------------------------------------------------------------------------
+  # JOB: Code Quality Checks (Optional - Future Ready)
+  # --------------------------------------------------------------------------
+  # Uncomment this job when you're ready to add linting and coverage
+  # quality:
+  #   name: Code Quality
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 10
+  #   
+  #   steps:
+  #     - name: 📥 Checkout Code
+  #       uses: actions/checkout@v4
+  #     
+  #     - name: 🐍 Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.11'
+  #     
+  #     - name: 📦 Cache pip Dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/pip
+  #         key: ${{ runner.os }}-pip-quality-${{ hashFiles('**/requirements.txt') }}
+  #     
+  #     - name: 📚 Install Dependencies
+  #       run: |
+  #         pip install -r requirements.txt
+  #         pip install pylint flake8 coverage
+  #     
+  #     - name: 🔍 Run Linting (flake8)
+  #       run: |
+  #         flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+  #     
+  #     - name: 📊 Run Tests with Coverage
+  #       run: |
+  #         echo "sk-ant-api03-ci-dummy-key" > .anthropickey
+  #         coverage run -m unittest discover -s tests -p "test_*.py"
+  #         coverage report
+  #         coverage html
+  #     
+  #     - name: 📈 Upload Coverage Report
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: coverage-report
+  #         path: htmlcov/
+  #         retention-days: 30
+
+# ============================================================================
+# WORKFLOW STATUS BADGE
+# ============================================================================
+# Add this badge to your README.md:
+# ![CI Pipeline](https://github.com/<username>/<repo>/workflows/CI%20Pipeline/badge.svg)
