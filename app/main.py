@@ -15,9 +15,9 @@ import shutil
 from pathlib import Path
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from parser_factory import ParserFactory
+from app.parser_factory import ParserFactory
 
 # Configure logging
 logging.basicConfig(
@@ -56,18 +56,13 @@ async def root() -> Dict[str, str]:
 @app.post("/upload/invoice")
 async def upload_invoice(file: UploadFile = File(...)) -> JSONResponse:
     """
-    Upload and parse an invoice PDF file with enhanced extraction and confidence scores.
-    
-    Returns OCI-like structured response with:
-    - confidence: Overall document confidence score
-    - data: Extracted fields (InvoiceId, VendorName, InvoiceDate, Items, etc.)
-    - predictionTime: Processing time in seconds
+    Upload and parse an invoice PDF file using Claude AI.
     
     Args:
         file (UploadFile): The invoice PDF file to parse.
     
     Returns:
-        JSONResponse: Parsed invoice data with confidence scores.
+        JSONResponse: Parsed invoice data.
     
     Raises:
         HTTPException: If file type is invalid or parsing fails.
@@ -90,10 +85,9 @@ async def upload_invoice(file: UploadFile = File(...)) -> JSONResponse:
             shutil.copyfileobj(file.file, buffer)
         logger.info(f"File saved to: {file_path}")
         
-        # Parse the invoice
+        # Parse the invoice with Claude AI
         parser = ParserFactory.get_parser("invoice", str(file_path))
-        parser.load_file()
-        result = parser.to_dict()
+        result = parser.parse()
         
         logger.info(f"Successfully parsed invoice: {file.filename}")
         return JSONResponse(content=result, status_code=200)
@@ -123,13 +117,13 @@ async def upload_invoice(file: UploadFile = File(...)) -> JSONResponse:
 @app.post("/upload/po")
 async def upload_po(file: UploadFile = File(...)) -> JSONResponse:
     """
-    Upload and parse a Purchase Order PDF file.
+    Upload and parse a Purchase Order PDF file using Claude AI.
     
     Args:
         file (UploadFile): The PO PDF file to parse.
     
     Returns:
-        JSONResponse: Parsed PO data in JSON format with metadata and items.
+        JSONResponse: Parsed PO data.
     
     Raises:
         HTTPException: If file type is invalid or parsing fails.
@@ -152,10 +146,9 @@ async def upload_po(file: UploadFile = File(...)) -> JSONResponse:
             shutil.copyfileobj(file.file, buffer)
         logger.info(f"File saved to: {file_path}")
         
-        # Parse the PO
+        # Parse the PO with Claude AI
         parser = ParserFactory.get_parser("po", str(file_path))
-        parser.load_file()
-        result = parser.to_dict()
+        result = parser.parse()
         
         logger.info(f"Successfully parsed PO: {file.filename}")
         return JSONResponse(content=result, status_code=200)

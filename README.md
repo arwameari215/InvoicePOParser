@@ -1,17 +1,20 @@
 # DocIntelligenceAPI
 
-A standalone Python backend API for parsing **Invoices** and **Purchase Orders (POs)** from PDF files. Built with FastAPI and following OOP principles, this API extracts structured data from documents with confidence scoring and returns clean JSON output similar to OCI Document AI.
+A standalone Python backend API for parsing **Invoices** and **Purchase Orders (POs)** from PDF files. Built with FastAPI and following OOP principles, this API extracts structured data from documents using **Claude AI** with confidence scoring and clean JSON output.
 
 ## 🚀 Features
 
 - ✅ **FastAPI** backend with RESTful endpoints
+- ✅ **Claude AI Integration** - Intelligent document parsing using Claude 3.5 Sonnet
 - ✅ **OOP-based architecture** with abstract base classes and concrete implementations
-- ✅ **Enhanced PDF parsing** using `pdfplumber` with regex-based field extraction
-- ✅ **Factory Pattern** for parser selection
-- ✅ **Confidence scoring** for extracted fields (OCI-like output)
+- ✅ **PDF parsing** using `pdfplumber` for text extraction
+- ✅ **Factory Pattern** for parser selection with intelligent routing
+- ✅ **Multi-language support** - English, Hebrew, and more via Claude AI
+- ✅ **Currency extraction** - Detects and normalizes currency codes (USD, EUR, ILS, etc.)
+- ✅ **Confidence scoring** for extracted fields (OCI-like output for invoices)
 - ✅ **Type hints and docstrings** throughout the codebase
 - ✅ **Comprehensive logging** for debugging and monitoring
-- ✅ **Unit tests** with mocked data (21/23 passing)
+- ✅ **Unit tests** with mocked data
 - ✅ **Production-ready** error handling
 - ✅ **Modular and extensible** design for future enhancements
 
@@ -20,18 +23,25 @@ A standalone Python backend API for parsing **Invoices** and **Purchase Orders (
 ```
 InvoicePOParser/
 ├── app/
-│   ├── main.py                          # FastAPI entrypoint with endpoints
-│   ├── parser_factory.py                # Factory to return parser based on doc type
+│   ├── main.py                          # FastAPI entrypoint
+│   ├── parser_factory.py                # Factory for Claude parser selection
+│   ├── config/
+│   │   └── prompts.py                   # Versioned Claude AI prompts
+│   ├── services/
+│   │   └── claude_service.py            # Claude API integration
 │   ├── parsers/
-│   │   ├── __init__.py
-│   │   ├── base_parser.py               # Abstract DocumentParser class
-│   │   ├── enhanced_invoice_parser.py   # Enhanced InvoiceParser with confidence scores
-│   │   └── po_parser.py                 # PurchaseOrderParser implementation
+│   │   ├── base_claude_parser.py        # Abstract Claude parser interface
+│   │   ├── invoice_claude_parser.py     # Claude AI invoice parser ✨
+│   │   └── po_claude_parser.py          # Claude AI PO parser ✨
+│   ├── utils/
+│   │   └── pdf_loader.py                # PDF loading utilities
 │   └── tmp/uploads/                     # Temporary file upload directory
 ├── tests/
-│   ├── test_invoice.py                  # Unit tests for invoice parser
-│   ├── test_po.py                       # Unit tests for PO parser
-│   └── test_api.py                      # API endpoint tests
+│   ├── test_api.py                      # API endpoint tests
+│   └── test_claude_parsers.py           # Standalone Claude parser tests
+├── .anthropickey                        # Your Anthropic API key (create this)
+├── .anthropickey.example                # API key template
+├── .gitignore                           # Git ignore rules
 ├── venv/                                # Virtual environment
 ├── requirements.txt                     # Python dependencies
 └── README.md                            # This file
@@ -43,6 +53,7 @@ InvoicePOParser/
 
 - Python 3.8 or higher
 - pip package manager
+- Anthropic API key (required for Claude AI parsing)
 
 ### Setup Steps
 
@@ -73,19 +84,32 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### Claude AI Setup (Required)
+
+1. **Get your Anthropic API key** from [Anthropic Console](https://console.anthropic.com/settings/keys)
+
+2. **Create `.anthropickey` file** in project root:
+
+```bash
+echo "sk-ant-api03-your-actual-key-here" > .anthropickey
+```
+
+⚠️ **Never commit `.anthropickey` to version control!**
+
 ## 🚀 Running the API
 
 Start the API server using `uvicorn`:
 
+**From the project root directory:**
+
 ```bash
-cd app
-python -m uvicorn main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
-Or from the root directory:
+Or using the virtual environment Python explicitly:
 
 ```bash
-cd app && ../venv/Scripts/python -m uvicorn main:app --reload --port 8000
+venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 
 The API will be available at: **http://localhost:8000**
@@ -130,48 +154,44 @@ GET /supported-types
 POST /upload/invoice
 ```
 
+**Parameters:**
+- `file` (required): PDF file to parse
+
 **Example using curl:**
 
 ```bash
 curl -X POST "http://localhost:8000/upload/invoice" \
-  -F "file=@C:\Users\LENOVO\ArwaMeari\invoices_sample\invoice_Anthony_Jacobs_37594.pdf"
+  -F "file=@path/to/invoice.pdf"
 ```
 
-**Example Response (OCI-like format):**
+**Response Format:**
 
 ```json
 {
-  "confidence": 0.84,
+  "confidence": 0.85,
   "data": {
-    "InvoiceId": "37594",
-    "VendorName": "SuperStore",
-    "InvoiceDate": "2012-12-27",
-    "BillingAddressRecipient": "Anthony Jacobs",
-    "ShippingAddress": "1915, Beverly,Massachusetts,United States",
-    "SubTotal": 567.04,
-    "ShippingCost": 11.34,
-    "InvoiceTotal": 578.38,
-    "Tax": null,
+    "InvoiceId": "12345",
+    "VendorName": "Vendor Company Name",
+    "InvoiceDate": "2024-01-15",
+    "BillingAddressRecipient": "Customer Name",
+    "ShippingAddress": "123 Main St, City, Country",
+    "SubTotal": 1000.0,
+    "ShippingCost": 50.0,
+    "InvoiceTotal": 1170.0,
+    "Tax": 120.0,
+    "Currency": "USD",
     "Items": [
       {
-        "description": "Xerox 1906 Paper, Office Supplies, OFF-PA-6457",
-        "quantity": 4,
-        "unit_price": 141.76,
-        "total": 567.04
+        "description": "Product A",
+        "quantity": 2,
+        "unit_price": 500.0,
+        "total": 1000.0
       }
     ]
   },
-  "predictionTime": 0.272
+  "predictionTime": 2.543
 }
 ```
-
-**Key Features:**
-- Extracts vendor name from document header
-- Parses dates in multiple formats (ISO, US, text)
-- Separates billing and shipping addresses
-- Handles item descriptions with hyphens and special characters
-- Includes confidence scoring for extraction quality
-- Returns prediction time for performance monitoring
 
 ### 4. **Upload and Parse Purchase Order**
 
@@ -179,116 +199,154 @@ curl -X POST "http://localhost:8000/upload/invoice" \
 POST /upload/po
 ```
 
+**Parameters:**
+- `file` (required): PDF file to parse
+
 **Example using curl:**
 
 ```bash
 curl -X POST "http://localhost:8000/upload/po" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
   -F "file=@path/to/purchase_order.pdf"
 ```
 
-**Example Response:**
+**Response Format:**
 
 ```json
 {
-  "metadata": {
-    "po_number": "PO123",
-    "date": "2026-01-25",
-    "supplier_name": "Supplier X",
-    "delivery_date": "2026-02-01",
-    "total_amount": 5000.0,
-    "status": "Pending"
-  },
+  "po_number": "PO-000X",
+  "date": "2024-01-24",
+  "supplier_name": "Supplier Company Name",
+  "company_name": "Buyer Company Name",
+  "delivery_date": "2024-01-30",
+  "total_amount": 40404.0,
+  "currency": "USD",
+  "status": "Pending",
   "items": [
     {
-      "description": "Product A",
-      "quantity": 10,
-      "unit_price": 500,
-      "total": 5000
+      "description": "Product SKU005",
+      "quantity": 182.0,
+      "unit_price": 222.0,
+      "total": 40404.0
     }
   ]
 }
+```## 🏗️ Architecture & Design
+
+### System Architecture
+
 ```
-
-## 🧪 Running Tests
-
-Run all unit tests using pytest from the virtual environment:
-
-```bash
-venv/Scripts/python -m pytest -v
+┌─────────────────────────────────────────────────────────────┐
+│                        FastAPI API                           │
+│                         main.py                              │
+│           POST /upload/invoice                               │
+│           POST /upload/po                                    │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    ParserFactory                             │
+│                   parser_factory.py                          │
+│  - Routes to appropriate Claude parser based on doc type    │
+│  - Manages singleton ClaudeService instance                 │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Claude AI Parsers                               │
+│                                                              │
+│  InvoiceClaudeParser  │  PurchaseOrderClaudeParser          │
+│                                                              │
+│  ↓ inherits from                                            │
+│  BaseClaudeParser (Abstract Base Class)                     │
+│  - get_prompt()                                             │
+│  - validate_schema()                                        │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    ClaudeService                             │
+│                 services/claude_service.py                   │
+│  - Claude API integration (claude-3-5-sonnet-20241022)      │
+│  - PDF → base64 encoding                                     │
+│  - JSON parsing and validation                               │
+└─────────────────────────────────────────────────────────────┘
 ```
-
-Run specific test file:
-
-```bash
-venv/Scripts/python -m pytest tests/test_invoice.py -v
-venv/Scripts/python -m pytest tests/test_po.py -v
-venv/Scripts/python -m pytest tests/test_api.py -v
-```
-
-**Test Results:** 21 passed, 2 failed (non-critical)
-
-## 🏗️ Architecture & Design
 
 ### OOP Design Principles
 
-1. **Abstract Base Class (`DocumentParser`)**
-   - Defines the interface for all parsers
-   - Methods: `load_file()`, `parse_metadata()`, `parse_items()`, `to_dict()`, `validate_file_exists()`
+1. **Abstract Base Class**
+   - `BaseClaudeParser`: Claude AI parser interface with `get_prompt()`, `validate_schema()`, and `parse()`
 
 2. **Concrete Implementations**
-   - `EnhancedInvoiceParser`: Parses invoice-specific fields with confidence scores
-   - `PurchaseOrderParser`: Parses PO-specific fields
+   - `InvoiceClaudeParser`: AI-powered invoice extraction with confidence scoring
+   - `PurchaseOrderClaudeParser`: AI-powered PO extraction with field validation
 
 3. **Factory Pattern (`ParserFactory`)**
-   - Returns appropriate parser based on document type
-   - Centralizes parser instantiation logic
+   - Intelligent routing based on document type
+   - Returns appropriate Claude parser instance
+   - Manages singleton ClaudeService instance
    - Supports: "invoice", "po", "purchase_order"
 
-4. **Separation of Concerns**
+4. **Service Layer**
+   - `ClaudeService`: Centralized Claude API integration
+   - API key management via `.anthropickey` file
+   - PDF encoding and JSON parsing utilities
+
+5. **Configuration Management**
+   - `prompts.py`: Versioned, centralized prompt templates
+   - Easy prompt updates without code changes
+
+6. **Separation of Concerns**
    - Parsing logic separate from API logic
-   - Regex-based field extraction for accuracy
+   - Service layer separate from parsers
+   - Prompts separate from parsing logic
    - Comprehensive error handling at each layer
    - Temporary file cleanup in finally blocks
 
-### Key Classes
-
-- **DocumentParser** (Abstract): Base class for all parsers with file validation
-- **EnhancedInvoiceParser**: Extracts InvoiceId, VendorName, dates, addresses, items with confidence scoring
-- **PurchaseOrderParser**: Extracts PO number, supplier, delivery date, status, items
-- **ParserFactory**: Static factory to create parsers based on document type
-
 ### Parsing Strategy
 
-The enhanced invoice parser uses:
-- **Text-based extraction** instead of table detection for better accuracy
-- **Regex patterns** for field matching with multiple format support
-- **Line-by-line parsing** for item extraction
-- **Confidence scoring** based on successful field matches
-- **Multi-line description support** for item details
+**Claude AI Parser:**
+- Natural language understanding via Claude 3.5 Sonnet
+- Multi-language support (English, Hebrew, etc.)
+- Complex layout handling
+- JSON-based structured output
+- Field validation and normalization
+- Currency detection and normalization
+- 2-5 second response time **pdfplumber**: Extract text and tables from PDFs (>=0.10.0)
+- **PyPDF2**: Alternative PDF processing library (>=3.0.0)
+- **pydantic**: Data validation and settings management (>=2.0.0)
+- **python-multipart**: Form data parsing (>=0.0.6)
 
-## 📝 JSON Output Format
+### Claude AI Integration
+- **anthropic**: Anthropic Python SDK for Claude API (>=0.18.0)
+- **pyyaml**: YAML parsing for structured output (>=6.0.1)
 
-### Invoice Output (OCI-like format)
+### Testing
+- **pytest**: Testing framework (>=7.4.0)
+- **pytest-asyncio**: Async test support (>=0.21.0)
+- **httpx**: HTTP client for testing (>=0.24.0
+## 📝 JSON Output Schema
+
+### Invoice Output
 
 ```json
 {
-  "confidence": 0.84,
+  "confidence": 0.85,
   "data": {
     "InvoiceId": "string",
     "VendorName": "string",
     "InvoiceDate": "string (YYYY-MM-DD)",
-    "BillingAddressRecipient": "string",
-    "ShippingAddress": "string",
+    "BillingAddressRecipient": "string or null",
+    "ShippingAddress": "string or null",
     "SubTotal": "float",
     "ShippingCost": "float",
     "InvoiceTotal": "float",
     "Tax": "float or null",
+    "Currency": "string (ISO 4217 code: USD, EUR, ILS, GBP, etc.)",
     "Items": [
       {
         "description": "string",
-        "quantity": "int",
+        "quantity": "float",
         "unit_price": "float",
         "total": "float"
       }
@@ -302,14 +360,14 @@ The enhanced invoice parser uses:
 
 ```json
 {
-  "metadata": {
-    "po_number": "string",
-    "date": "string (YYYY-MM-DD)",
-    "supplier_name": "string",
-    "delivery_date": "string (YYYY-MM-DD)",
-    "total_amount": "float",
-    "status": "string"
-  },
+  "po_number": "string",
+  "date": "string (YYYY-MM-DD)",
+  "supplier_name": "string",
+  "company_name": "string",
+  "delivery_date": "string (YYYY-MM-DD)",
+  "total_amount": "float",
+  "currency": "string (ISO 4217 code: USD, EUR, ILS, GBP, etc.)",
+  "status": "string (e.g., Pending, Approved)",
   "items": [
     {
       "description": "string",
@@ -321,11 +379,46 @@ The enhanced invoice parser uses:
 }
 ```
 
+### Field Descriptions
+
+**Invoice Fields:**
+- `InvoiceId`: Invoice number/identifier
+- `VendorName`: Vendor/supplier company name
+- `InvoiceDate`: Invoice date in YYYY-MM-DD format
+- `BillingAddressRecipient`: Billing address recipient name (nullable)
+- `ShippingAddress`: Shipping address (nullable)
+- `SubTotal`: Subtotal amount (number only, no currency symbol)
+- `ShippingCost`: Shipping/delivery cost (number only)
+- `InvoiceTotal`: Total invoice amount including all charges
+- `Tax`: Tax amount (nullable if not specified)
+- `Currency`: ISO 4217 currency code (USD, EUR, ILS, GBP, etc.)
+- `Items`: Array of line items (can be empty)
+- `confidence`: Overall confidence score (0.0-1.0)
+- `predictionTime`: Time taken to parse the document in seconds
+
+**Purchase Order Fields:**
+- `po_number`: Purchase order number/identifier
+- `date`: PO issue date in YYYY-MM-DD format
+- `supplier_name`: Supplier company name
+- `company_name`: Buyer company name (issuer of PO)
+- `delivery_date`: Expected delivery date in YYYY-MM-DD format
+- `total_amount`: Total order amount (number only)
+- `currency`: ISO 4217 currency code (USD, EUR, ILS, GBP, etc.)
+- `status`: Order status (e.g., Pending, Approved, Completed)
+- `items`: Array of ordered items
+
+**Currency Support:**
+- Automatically detects and normalizes currency symbols ($, €, ₪, £, ¥, ₹)
+- Returns ISO 4217 standard codes (USD, EUR, ILS, GBP, JPY, INR)
+- Defaults to USD if currency cannot be determined
+
 ## 🔧 Configuration
 
 - **Upload Directory**: `tmp/uploads/` (automatically created)
 - **Default Port**: 8000
 - **Log Level**: INFO
+- **Claude Model**: claude-3-5-sonnet-20241022
+- **API Key File**: `.anthropickey` (must be in project root)
 
 ## 🛡️ Error Handling
 
@@ -337,38 +430,74 @@ The API provides meaningful error responses:
 
 All errors are logged with detailed information for debugging.
 
+## 🧪 Testing
+
+### Test API Endpoints
+
+Run the unit tests:
+
+```bash
+pytest tests/test_api.py -v
+```
+
+### Test Claude Parsers Standalone
+
+Test Claude parsers directly without starting the API server:
+
+```bash
+# From the tests directory
+python tests/test_claude_parsers.py invoice path/to/invoice.pdf
+python tests/test_claude_parsers.py po path/to/purchase_order.pdf
+```
+
+This allows you to test parsing functionality independently and see detailed output.
+
 ## 🚀 Future Enhancements
 
 This API is designed to be extensible for:
 
-- 🌍 **Multilingual Support**: Parse documents in multiple languages
+- ✅ **Multilingual Support**: Already supported via Claude AI
+- ✅ **ML-based Extraction**: Integrated via Claude AI
+- ✅ **Currency Detection**: Implemented with ISO 4217 normalization
 - 📦 **Batch Processing**: Upload and parse multiple documents at once
-- 🤖 **ML-based Extraction**: Integrate machine learning models for better accuracy
 - 📊 **Database Integration**: Store parsed invoice data in database
-- 🎯 **Field-level Confidence**: Return confidence for each individual field
+- 🎯 **Field-level Confidence**: Return confidence for each individual field from Claude
 - 📈 **Analytics Dashboard**: Track parsing performance and accuracy
 - 🔐 **Authentication**: Add API key or OAuth2 authentication
+- 💾 **Caching**: Cache parsed results by PDF hash
 
 ## 📄 Dependencies
 
+### Web Framework
 - **fastapi**: Modern web framework for building APIs (>=0.100.0)
 - **uvicorn[standard]**: ASGI server for running FastAPI (>=0.23.0)
+- **python-multipart**: Form data parsing (>=0.0.6)
+
+### PDF Processing
 - **pdfplumber**: Extract text and tables from PDFs (>=0.10.0)
 - **PyPDF2**: Alternative PDF processing library (>=3.0.0)
+
+### Data Validation
 - **pydantic**: Data validation and settings management (>=2.0.0)
+
+### Claude AI Integration
+- **anthropic**: Anthropic Python SDK for Claude API (>=0.18.0)
+- **pyyaml**: YAML parsing for structured output (>=6.0.1)
+
+### Testing
 - **pytest**: Testing framework (>=7.4.0)
 - **pytest-asyncio**: Async test support (>=0.21.0)
 - **httpx**: HTTP client for testing (>=0.24.0)
-- **python-multipart**: Form data parsing (>=0.0.6)
 
 ## 🤝 Contributing
 
 This is a production-ready, standalone backend API. To extend functionality:
 
-1. Add new parser classes inheriting from `DocumentParser`
-2. Update `ParserFactory` to support new document types
-3. Add corresponding endpoints in `main.py`
-4. Write unit tests for new features
+1. Add new parser classes inheriting from `BaseClaudeParser`
+2. Add prompts to `config/prompts.py`
+3. Update `ParserFactory` to support new document types
+4. Add corresponding endpoints in `main.py`
+5. Write unit tests for new features
 
 ## 📞 Support
 
@@ -380,4 +509,4 @@ This project is designed for internal use as a document parsing API.
 
 ---
 
-**Built with ❤️ using FastAPI and Python**
+**Built with ❤️ using FastAPI, Claude AI, and Python**
