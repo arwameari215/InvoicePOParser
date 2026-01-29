@@ -14,7 +14,7 @@ class InvoicePrompts:
     """Prompts for invoice parsing."""
     
     PROMPT = """
-Please extract the following invoice fields: InvoiceId, VendorName, InvoiceDate, BillingAddressRecipient, ShippingAddress, SubTotal, ShippingCost, InvoiceTotal, Tax, Items.
+Please extract the following invoice fields: InvoiceId, VendorName, InvoiceDate, BillingAddressRecipient, ShippingAddress, SubTotal, ShippingCost, InvoiceTotal, Tax, Currency, Items.
 
 Notes:
 - Output a JSON format ONLY, without any additional text.
@@ -27,6 +27,7 @@ Notes:
 - ShippingCost: Shipping cost (number only, no currency symbol).
 - InvoiceTotal: Total invoice amount (number only, no currency symbol).
 - Tax: Tax amount (can be null if not found, number only).
+- Currency: The currency used in the document (e.g., "USD", "EUR", "ILS", "GBP"). Extract the ISO 4217 currency code if possible. Common symbols: $ = USD, € = EUR, ₪ = ILS, £ = GBP.
 - Items: List/array of line items (can be empty array [] if no items found). Each item should have relevant fields like description, quantity, price.
 - Do not add any other entries except what you were tasked to extract.
 """
@@ -36,7 +37,7 @@ class PurchaseOrderPrompts:
     """Prompts for purchase order parsing."""
     
     PROMPT = """
-Please extract: po_number, date, supplier_name, company_name, delivery_date, total_amount, status, items (list of objects with description, quantity, unit_price, total).
+Please extract: po_number, date, supplier_name, company_name, delivery_date, total_amount, currency, status, items (list of objects with description, quantity, unit_price, total).
 
 Notes:
 - Output a JSON format ONLY, without any additional text.
@@ -45,6 +46,7 @@ Notes:
 - The company_name is the company/organization that issued the purchase order (buyer company).
 - Dates must be in format YYYY-MM-DD.
 - Prices without the currency sign, only numbers.
+- currency: The currency used in the document (e.g., "USD", "EUR", "ILS", "GBP"). Extract the ISO 4217 currency code if possible. Common symbols: $ = USD, € = EUR, ₪ = ILS, £ = GBP.
 - items must ALWAYS be a list/array of objects.
 - Each item object should have: description, quantity, unit_price, total.
 - Do not add any other entries except what you were tasked to extract.

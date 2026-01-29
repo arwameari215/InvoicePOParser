@@ -37,7 +37,7 @@ class InvoiceClaudeParser(BaseClaudeParser):
     # Expected schema fields
     REQUIRED_FIELDS = [
         "InvoiceId", "VendorName", "InvoiceDate", "BillingAddressRecipient",
-        "ShippingAddress", "SubTotal", "ShippingCost", "InvoiceTotal", "Tax", "Items"
+        "ShippingAddress", "SubTotal", "ShippingCost", "InvoiceTotal", "Tax", "Currency", "Items"
     ]
     
     def get_prompt(self) -> str:
@@ -119,6 +119,9 @@ class InvoiceClaudeParser(BaseClaudeParser):
         validated["ShippingCost"] = self._validate_number(data.get("ShippingCost"), "ShippingCost")
         validated["InvoiceTotal"] = self._validate_number(data.get("InvoiceTotal"), "InvoiceTotal")
         validated["Tax"] = self._validate_optional_number(data.get("Tax"))
+        
+        # Currency field
+        validated["Currency"] = self._validate_currency(data.get("Currency"))
         
         # Items - must be array
         validated["Items"] = self._validate_items(data.get("Items"))
@@ -216,6 +219,37 @@ class InvoiceClaudeParser(BaseClaudeParser):
             return num
         except (ValueError, TypeError):
             return None
+    
+    def _validate_currency(self, value: Any) -> str:
+        """Validate currency field - normalize to ISO 4217 codes."""
+        if value is None or value == "":
+            return "USD"  # Default to USD if not found
+        
+        currency_str = str(value).strip().upper()
+        
+        # Map common symbols to ISO codes
+        currency_map = {
+            "$": "USD",
+            "€": "EUR",
+            "₪": "ILS",
+            "£": "GBP",
+            "¥": "JPY",
+            "₹": "INR"
+        }
+        
+        # Check if it's a symbol
+        if currency_str in currency_map:
+            currency_str = currency_map[currency_str]
+        
+        # Common currency codes
+        valid_currencies = ["USD", "EUR", "ILS", "GBP", "JPY", "CNY", "INR", "CAD", "AUD", "CHF"]
+        
+        if currency_str in valid_currencies:
+            logger.debug(f"Validated currency: {currency_str}")
+            return currency_str
+        
+        logger.warning(f"Unknown currency: {value}, defaulting to USD")
+        return "USD"
     
     def _validate_items(self, value: Any) -> list:
         """Validate Items field - must be array."""

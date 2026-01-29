@@ -32,7 +32,7 @@ class PurchaseOrderClaudeParser(BaseClaudeParser):
     # Expected schema fields
     REQUIRED_FIELDS = [
         "po_number", "date", "supplier_name", "company_name", "delivery_date",
-        "total_amount", "status", "items"
+        "total_amount", "currency", "status", "items"
     ]
     
     # Expected item fields
@@ -88,6 +88,9 @@ class PurchaseOrderClaudeParser(BaseClaudeParser):
         
         # total_amount - must be number
         validated["total_amount"] = self._validate_number(data.get("total_amount"), "total_amount")
+        
+        # currency - must be string
+        validated["currency"] = self._validate_currency(data.get("currency"))
         
         # status - must be string
         validated["status"] = self._validate_status(data.get("status"))
@@ -202,6 +205,37 @@ class PurchaseOrderClaudeParser(BaseClaudeParser):
         except (ValueError, TypeError) as e:
             logger.error(f"Number validation failed for {field_name}: {str(e)}")
             return None
+    
+    def _validate_currency(self, value: Any) -> str:
+        """Validate currency field - normalize to ISO 4217 codes."""
+        if value is None or value == "":
+            return "USD"  # Default to USD if not found
+        
+        currency_str = str(value).strip().upper()
+        
+        # Map common symbols to ISO codes
+        currency_map = {
+            "$": "USD",
+            "€": "EUR",
+            "₪": "ILS",
+            "£": "GBP",
+            "¥": "JPY",
+            "₹": "INR"
+        }
+        
+        # Check if it's a symbol
+        if currency_str in currency_map:
+            currency_str = currency_map[currency_str]
+        
+        # Common currency codes
+        valid_currencies = ["USD", "EUR", "ILS", "GBP", "JPY", "CNY", "INR", "CAD", "AUD", "CHF"]
+        
+        if currency_str in valid_currencies:
+            logger.debug(f"Validated currency: {currency_str}")
+            return currency_str
+        
+        logger.warning(f"Unknown currency: {value}, defaulting to USD")
+        return "USD"
     
     def _validate_status(self, value: Any) -> str:
         """Validate status field."""
