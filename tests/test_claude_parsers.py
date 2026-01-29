@@ -8,11 +8,12 @@ import sys
 import os
 
 # Add app directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
 
-from services.claude_service import ClaudeService
-from parsers.invoice_claude_parser import InvoiceClaudeParser
-from parsers.po_claude_parser import PurchaseOrderClaudeParser
+from app.services.claude_service import ClaudeService
+from app.parsers.invoice_claude_parser import InvoiceClaudeParser
+from app.parsers.po_claude_parser import PurchaseOrderClaudeParser
 
 
 def test_invoice_parser(pdf_path: str):
