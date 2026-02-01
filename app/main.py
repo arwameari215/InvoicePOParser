@@ -18,9 +18,6 @@ load_dotenv()
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import routers
-from app.routers import documents, erpnext
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -35,9 +32,15 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Include routers
-app.include_router(documents.router)
-app.include_router(erpnext.router)
+# Import and include routers (after app initialization to handle import errors gracefully)
+try:
+    from app.routers import documents, erpnext
+    app.include_router(documents.router)
+    app.include_router(erpnext.router)
+    logger.info("✅ Successfully loaded all routers")
+except Exception as e:
+    logger.warning(f"⚠️ Could not load some routers: {str(e)}")
+    # API will still work with just root/health endpoints
 
 
 @app.get("/")
