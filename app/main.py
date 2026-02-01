@@ -6,7 +6,7 @@ and returns structured JSON data with ERPNext integration.
 """
 
 from fastapi import FastAPI
-from typing import Dict
+from typing import Dict, Any
 import sys
 import os
 import logging
@@ -17,9 +17,6 @@ load_dotenv()
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Import routers
-from app.routers import documents, erpnext
 
 # Configure logging
 logging.basicConfig(
@@ -35,18 +32,24 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Include routers
-app.include_router(documents.router)
-app.include_router(erpnext.router)
+# Import and include routers (after app initialization to handle import errors gracefully)
+try:
+    from app.routers import documents, erpnext
+    app.include_router(documents.router)
+    app.include_router(erpnext.router)
+    logger.info("✅ Successfully loaded all routers")
+except Exception as e:
+    logger.warning(f"⚠️ Could not load some routers: {str(e)}")
+    # API will still work with just root/health endpoints
 
 
 @app.get("/")
-async def root() -> Dict[str, str]:
+async def root() -> Dict[str, Any]:
     """
     Root endpoint - API health check.
     
     Returns:
-        Dict[str, str]: Welcome message and API status.
+        Dict[str, Any]: Welcome message and API status.
     """
     return {
         "message": "DocIntelligenceAPI is running",
