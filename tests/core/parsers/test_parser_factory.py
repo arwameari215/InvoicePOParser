@@ -10,10 +10,10 @@ import sys
 import os
 
 # Add parent directories to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'app'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'app'))
 
-from tests.base.base_test_case import BaseTestCase
+from tests.integration.helpers.base_test_case import BaseTestCase
 from app.parser_factory import ParserFactory
 from app.parsers.invoice_claude_parser import InvoiceClaudeParser
 from app.parsers.po_claude_parser import PurchaseOrderClaudeParser

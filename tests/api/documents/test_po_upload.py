@@ -10,12 +10,12 @@ from fastapi.testclient import TestClient
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'app'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'app'))
 
-from tests.base.base_test_case import BaseTestCase
-from tests.base.mock_helpers import MockClaudeResponseBuilder, MockPDFFile
-from tests.integration.api_clients.document_upload_client import DocumentUploadClient
+from tests.integration.helpers.base_test_case import BaseTestCase
+from tests.integration.helpers.mock_helpers import MockClaudeResponseBuilder, MockPDFFile
+from tests.api.clients.document_upload_client import DocumentUploadClient
 from app.main import app
 from app.parser_factory import ParserFactory
 

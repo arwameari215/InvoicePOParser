@@ -18,10 +18,10 @@ import sys
 import os
 
 # Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 from app.main import app
-from tests.fixtures.erpnext_fixtures import ERPNextFixtures
+from tests.integration.helpers.erpnext_fixtures import ERPNextFixtures
 
 
 class TestERPNextAPIEndpoints(unittest.TestCase):
