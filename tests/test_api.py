@@ -65,7 +65,7 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("Invalid file type", response.json()["detail"])
 
-    @patch('app.main.ParserFactory.get_parser')
+    @patch('app.parser_factory.ParserFactory.get_parser')
     def test_upload_invoice_success(self, mock_get_parser):
         """Test successful invoice upload with Claude AI."""
         # Mock Claude AI parser with legacy format
@@ -99,7 +99,7 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertIn("data", response_data)
         self.assertIn("InvoiceId", response_data["data"])
 
-    @patch('app.main.ParserFactory.get_parser')
+    @patch('app.parser_factory.ParserFactory.get_parser')
     def test_upload_po_success(self, mock_get_parser):
         """Test successful PO upload with Claude AI."""
         # Mock Claude AI parser

@@ -129,11 +129,20 @@ class TestHealthAPI(BaseTestCase):
         # Assert
         data = response.json()
         
+        # Check required keys exist
         required_keys = ['message', 'version', 'endpoints']
         for key in required_keys:
             self.assertIn(key, data)
-            self.assertIsInstance(data[key], str)
-            self.assertGreater(len(data[key]), 0)
+        
+        # Validate string fields
+        self.assertIsInstance(data['message'], str)
+        self.assertGreater(len(data['message']), 0)
+        self.assertIsInstance(data['version'], str)
+        self.assertGreater(len(data['version']), 0)
+        
+        # Validate endpoints is a dict
+        self.assertIsInstance(data['endpoints'], dict)
+        self.assertGreater(len(data['endpoints']), 0)
     
     def test_health_using_helper_method(self):
         """
