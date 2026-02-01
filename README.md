@@ -1,9 +1,10 @@
-# DocIntelligenceAPI
+# DocIntelligenceAPI with ERPNext Integration
 
-A standalone Python backend API for parsing **Invoices** and **Purchase Orders (POs)** from PDF files. Built with FastAPI and following OOP principles, this API extracts structured data from documents using **Claude AI** with confidence scoring and clean JSON output.
+A standalone Python backend API for parsing **Invoices** and **Purchase Orders (POs)** from PDF files with **integrated ERPNext ERP workflows**. Built with FastAPI and following OOP principles, this API extracts structured data from documents using **Claude AI** and provides seamless integration with ERPNext for automated document submission.
 
 ## 🚀 Features
 
+### Document Parsing
 - ✅ **FastAPI** backend with RESTful endpoints
 - ✅ **Claude AI Integration** - Intelligent document parsing using Claude 3.5 Sonnet
 - ✅ **OOP-based architecture** with abstract base classes and concrete implementations
@@ -12,6 +13,17 @@ A standalone Python backend API for parsing **Invoices** and **Purchase Orders (
 - ✅ **Multi-language support** - English, Hebrew, and more via Claude AI
 - ✅ **Currency extraction** - Detects and normalizes currency codes (USD, EUR, ILS, etc.)
 - ✅ **Confidence scoring** for extracted fields (OCI-like output for invoices)
+
+### ERPNext Integration
+- ✅ **ERPNext REST API Integration** - Direct communication with ERPNext ERP system
+- ✅ **Entity Management** - Fetch and validate Companies, Suppliers, Customers, Items
+- ✅ **Purchase Order Workflow** - Complete automation from parsed data to submitted PO
+- ✅ **Sales Invoice Workflow** - Automated invoice creation and submission
+- ✅ **Token-based Authentication** - Secure ERPNext API access
+- ✅ **Entity Auto-creation** - Automatically creates missing entities with validation
+- ✅ **Modular Router Architecture** - Separate endpoints for documents and ERPNext
+
+### Quality & Development
 - ✅ **Type hints and docstrings** throughout the codebase
 - ✅ **Comprehensive logging** for debugging and monitoring
 - ✅ **Unit tests** with mocked data
@@ -23,28 +35,39 @@ A standalone Python backend API for parsing **Invoices** and **Purchase Orders (
 ```
 InvoicePOParser/
 ├── app/
-│   ├── main.py                          # FastAPI entrypoint
+│   ├── main.py                          # FastAPI app initialization & router mounting
 │   ├── parser_factory.py                # Factory for Claude parser selection
+│   ├── routers/                         # API endpoint routers
+│   │   ├── __init__.py
+│   │   ├── documents.py                 # Document upload & parsing endpoints
+│   │   └── erpnext.py                   # ERPNext integration endpoints
 │   ├── config/
-│   │   └── prompts.py                   # Versioned Claude AI prompts
+│   │   ├── prompts.py                   # Versioned Claude AI prompts
+│   │   └── erpnext_config.py            # ERPNext configuration & credentials
 │   ├── services/
-│   │   └── claude_service.py            # Claude API integration
+│   │   ├── claude_service.py            # Claude AI API integration
+│   │   └── erpnext_service.py           # ERPNext REST API client
+│   ├── workflows/
+│   │   └── erpnext_workflows.py         # Purchase Order & Sales Invoice workflows
 │   ├── parsers/
-│   │   ├── base_claude_parser.py        # Abstract Claude parser interface
-│   │   ├── invoice_claude_parser.py     # Claude AI invoice parser ✨
-│   │   └── po_claude_parser.py          # Claude AI PO parser ✨
+│   │   ├── base_claude_parser.py        # Abstract base class
+│   │   ├── invoice_claude_parser.py     # Invoice parser implementation
+│   │   └── po_claude_parser.py          # Purchase Order parser implementation
 │   ├── utils/
-│   │   └── pdf_loader.py                # PDF loading utilities
-│   └── tmp/uploads/                     # Temporary file upload directory
+│   │   └── pdf_loader.py                # PDF text extraction utilities
+│   └── tmp/
+│       └── uploads/                     # Temporary file storage
 ├── tests/
-│   ├── test_api.py                      # API endpoint tests
-│   └── test_claude_parsers.py           # Standalone Claude parser tests
-├── .anthropickey                        # Your Anthropic API key (create this)
-├── .anthropickey.example                # API key template
-├── .gitignore                           # Git ignore rules
-├── venv/                                # Virtual environment
+│   ├── unit/                            # Unit tests
+│   ├── integration/                     # Integration tests
+│   └── test_claude_parsers.py           # Standalone parser testing
+├── .env                                 # Environment variables (git-ignored)
+├── .env.example                         # Environment template
+├── .anthropickey                        # Claude API key (git-ignored)
 ├── requirements.txt                     # Python dependencies
-└── README.md                            # This file
+├── README.md                            # This file
+├── ERPNEXT_QUICKSTART.md               # ERPNext integration guide
+└── TEST_DOCUMENTATION.md                # Testing documentation
 ```
 
 ## 🛠️ Installation
@@ -54,6 +77,7 @@ InvoicePOParser/
 - Python 3.8 or higher
 - pip package manager
 - Anthropic API key (required for Claude AI parsing)
+- ERPNext instance (optional, for ERP integration features)
 
 ### Setup Steps
 
@@ -96,6 +120,31 @@ echo "sk-ant-api03-your-actual-key-here" > .anthropickey
 
 ⚠️ **Never commit `.anthropickey` to version control!**
 
+### ERPNext Setup (Optional, for ERP Integration)
+
+1. **Copy the environment template**
+
+```bash
+cp .env.example .env
+```
+
+2. **Edit `.env` file** with your ERPNext credentials:
+
+```bash
+ERPNEXT_URL=http://localhost:8080
+ERPNEXT_API_KEY=your_api_key_here
+ERPNEXT_API_SECRET=your_api_secret_here
+```
+
+3. **Generate ERPNext API credentials**:
+   - Log in to ERPNext
+   - Go to: User → API Access → Generate Keys
+   - Copy the API Key and API Secret to your `.env` file
+
+⚠️ **Never commit `.env` to version control!**
+
+📖 For detailed ERPNext integration setup, see [ERPNEXT_QUICKSTART.md](ERPNEXT_QUICKSTART.md)
+
 ## 🚀 Running the API
 
 Start the API server using `uvicorn`:
@@ -119,6 +168,8 @@ The API will be available at: **http://localhost:8000**
 
 ## 📡 API Endpoints
 
+### Core Endpoints
+
 ### 1. **Health Check**
 
 ```bash
@@ -129,11 +180,16 @@ GET /health
 **Response:**
 ```json
 {
-  "message": "DocIntelligenceAPI is running",
-  "version": "1.0.0",
-  "endpoints": "/upload/invoice, /upload/po"
+  "message": "DocIntelligenceAPI with ERPNext Integration is running",
+  "version": "2.0.0",
+  "endpoints": {
+    "documents": "/upload/invoice, /upload/po, /supported-types",
+    "erpnext": "/erpnext/test-connection, /erpnext/company, /erpnext/supplier, /erpnext/customer, /erpnext/item, /erpnext/purchase-order, /erpnext/sales-invoice"
+  }
 }
 ```
+
+### Document Parsing Endpoints
 
 ### 2. **Get Supported Document Types**
 
@@ -230,19 +286,199 @@ curl -X POST "http://localhost:8000/upload/po" \
     }
   ]
 }
-```## 🏗️ Architecture & Design
+```
+
+### ERPNext Integration Endpoints
+
+### 5. **Test ERPNext Connection**
+
+```bash
+GET /erpnext/test-connection
+```
+
+**Response:**
+```json
+{
+  "connected": true,
+  "message": "Successfully connected to ERPNext"
+}
+```
+
+### 6. **Get Company Details**
+
+```bash
+GET /erpnext/company/{company_name}
+```
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/erpnext/company/My%20Company"
+```
+
+**Response:**
+```json
+{
+  "name": "My Company",
+  "abbr": "MC",
+  "default_currency": "USD",
+  ...
+}
+```
+
+### 7. **Get Supplier Details**
+
+```bash
+GET /erpnext/supplier/{supplier_name}
+```
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/erpnext/supplier/ABC%20Supplies"
+```
+
+### 8. **Get Customer Details**
+
+```bash
+GET /erpnext/customer/{customer_name}
+```
+
+### 9. **Get Item Details**
+
+```bash
+GET /erpnext/item/{item_code}
+```
+
+### 10. **Submit Purchase Order to ERPNext**
+
+```bash
+POST /erpnext/purchase-order
+```
+
+**Request Body:**
+```json
+{
+  "po_number": "PO-2024-001",
+  "supplier": "ABC Supplies",
+  "company": "My Company",
+  "transaction_date": "2024-01-24",
+  "schedule_date": "2024-01-30",
+  "currency": "USD",
+  "items": [
+    {
+      "item_code": "ITEM-001",
+      "item_name": "Product A",
+      "qty": 10,
+      "rate": 100.0,
+      "amount": 1000.0
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Purchase Order PO-00001 created and submitted successfully",
+  "po_name": "PO-00001",
+  "details": { ... }
+}
+```
+
+### 11. **Submit Sales Invoice to ERPNext**
+
+```bash
+POST /erpnext/sales-invoice
+```
+
+**Request Body:**
+```json
+{
+  "customer": "John Doe",
+  "company": "My Company",
+  "posting_date": "2024-01-24",
+  "due_date": "2024-02-24",
+  "currency": "USD",
+  "items": [
+    {
+      "item_code": "ITEM-001",
+      "qty": 5,
+      "rate": 200.0
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Sales Invoice SINV-00001 created and submitted successfully",
+  "invoice_name": "SINV-00001",
+  "details": { ... }
+}
+```
+
+📖 For detailed ERPNext endpoint documentation and workflows, see [ERPNEXT_QUICKSTART.md](ERPNEXT_QUICKSTART.md)
+
+## 🏗️ Architecture & Design
 
 ### System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        FastAPI API                           │
-│                         main.py                              │
-│           POST /upload/invoice                               │
-│           POST /upload/po                                    │
-└─────────────────┬───────────────────────────────────────────┘
-                  │
-                  ▼
+│                     UI Application                           │
+│              (React/Vue/Angular/etc.)                        │
+└───────────────┬─────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  FastAPI Backend (Port 8000)                 │
+│                                                              │
+│  ┌──────────────────────┐    ┌──────────────────────────┐  │
+│  │  Documents Router    │    │   ERPNext Router         │  │
+│  │  /upload/invoice     │    │   /erpnext/*             │  │
+│  │  /upload/po          │    │                          │  │
+│  └──────────┬───────────┘    └──────────┬───────────────┘  │
+│             │                            │                   │
+│             ▼                            ▼                   │
+│  ┌──────────────────────┐    ┌──────────────────────────┐  │
+│  │  Parser Factory      │    │  ERPNext Workflows       │  │
+│  │  Claude Parsers      │    │  - Purchase Order        │  │
+│  └──────────┬───────────┘    │  - Sales Invoice         │  │
+│             │                 └──────────┬───────────────┘  │
+│             ▼                            │                   │
+│  ┌──────────────────────┐               │                   │
+│  │  Claude AI Service   │               │                   │
+│  │  (Document Parsing)  │               │                   │
+│  └──────────────────────┘               │                   │
+│                                          ▼                   │
+│                              ┌──────────────────────────┐   │
+│                              │  ERPNext Service         │   │
+│                              │  (API Client)            │   │
+│                              └──────────┬───────────────┘   │
+└─────────────────────────────────────────┼───────────────────┘
+                                          │
+                                          ▼
+                              ┌──────────────────────────┐
+                              │   ERPNext ERP System     │
+                              │   (Port 8080)            │
+                              └──────────────────────────┘
+```
+
+### Architecture Highlights
+
+1. **Modular Router Design**: Separate routers for document processing and ERPNext integration
+2. **Middleware Layer**: API acts as intelligent middleware between UI and ERPNext
+3. **Automated Workflows**: Complete end-to-end workflows with validation and entity creation
+4. **Service Isolation**: Clear separation between Claude AI parsing and ERPNext integration
+5. **Configuration Management**: Centralized config for ERPNext credentials and endpoints
+
+### OOP Design
+
+#### Documents Module
+
+```
 ┌─────────────────────────────────────────────────────────────┐
 │                    ParserFactory                             │
 │                   parser_factory.py                          │
@@ -272,6 +508,38 @@ curl -X POST "http://localhost:8000/upload/po" \
 └─────────────────────────────────────────────────────────────┘
 ```
 
+#### ERPNext Integration Module
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ERPNext Workflows                         │
+│               workflows/erpnext_workflows.py                 │
+│  - submit_purchase_order_workflow()                         │
+│  - submit_sales_invoice_workflow()                          │
+│  - Entity validation and auto-creation                      │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    ERPNext Service                           │
+│                services/erpnext_service.py                   │
+│  - api_request(): Generic API client                        │
+│  - get_entity(): Fetch entities from ERPNext                │
+│  - create_entity(): Create new entities                     │
+│  - update_entity(): Update existing entities                │
+│  - ensure_entity_exists(): Validation + auto-creation       │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   ERPNext Config                             │
+│               config/erpnext_config.py                       │
+│  - Credential management (API key, secret)                  │
+│  - URL configuration                                        │
+│  - Header generation for authentication                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ### OOP Design Principles
 
 1. **Abstract Base Class**
@@ -289,17 +557,27 @@ curl -X POST "http://localhost:8000/upload/po" \
 
 4. **Service Layer**
    - `ClaudeService`: Centralized Claude API integration
-   - API key management via `.anthropickey` file
+   - `ERPNextService`: ERPNext REST API client with error handling
+   - API key management via `.anthropickey` and `.env` files
    - PDF encoding and JSON parsing utilities
 
-5. **Configuration Management**
-   - `prompts.py`: Versioned, centralized prompt templates
-   - Easy prompt updates without code changes
+5. **Workflow Pattern (`ERPNextWorkflows`)**
+   - Complete end-to-end workflows for Purchase Orders and Sales Invoices
+   - Entity validation and auto-creation (Supplier, Customer, Item)
+   - Error handling and rollback support
+   - Status tracking and reporting
 
-6. **Separation of Concerns**
-   - Parsing logic separate from API logic
-   - Service layer separate from parsers
-   - Prompts separate from parsing logic
+6. **Configuration Management**
+   - `prompts.py`: Versioned, centralized Claude AI prompt templates
+   - `erpnext_config.py`: ERPNext credentials and URL management
+   - Environment variable loading with `python-dotenv`
+   - Easy configuration updates without code changes
+
+7. **Separation of Concerns**
+   - Parsing logic separate from API routing
+   - ERPNext integration separate from document parsing
+   - Service layer separate from business logic
+   - Routers separate from workflows
    - Comprehensive error handling at each layer
    - Temporary file cleanup in finally blocks
 
@@ -459,19 +737,26 @@ This API is designed to be extensible for:
 - ✅ **Multilingual Support**: Already supported via Claude AI
 - ✅ **ML-based Extraction**: Integrated via Claude AI
 - ✅ **Currency Detection**: Implemented with ISO 4217 normalization
+- ✅ **ERPNext Integration**: Complete Purchase Order and Sales Invoice workflows
 - 📦 **Batch Processing**: Upload and parse multiple documents at once
-- 📊 **Database Integration**: Store parsed invoice data in database
+- 📊 **Database Integration**: Store parsed data locally for caching and analytics
 - 🎯 **Field-level Confidence**: Return confidence for each individual field from Claude
 - 📈 **Analytics Dashboard**: Track parsing performance and accuracy
-- 🔐 **Authentication**: Add API key or OAuth2 authentication
-- 💾 **Caching**: Cache parsed results by PDF hash
+- 🔐 **Authentication**: Add API key or OAuth2 authentication for production
+- 💾 **Caching**: Cache parsed results by PDF hash to reduce API costs
+- 📄 **Additional Document Types**: Support for receipts, bills of lading, etc.
+- 🔄 **Webhook Support**: Real-time notifications for ERPNext document status changes
 
 ## 📄 Dependencies
 
 ### Web Framework
-- **fastapi**: Modern web framework for building APIs (>=0.100.0)
+- **fastapi**: Modern web framework for building APIs (>=2.0.0)
 - **uvicorn[standard]**: ASGI server for running FastAPI (>=0.23.0)
 - **python-multipart**: Form data parsing (>=0.0.6)
+
+### ERPNext Integration
+- **requests**: HTTP client for ERPNext API (>=2.31.0)
+- **python-dotenv**: Environment variable management (>=1.0.0)
 
 ### PDF Processing
 - **pdfplumber**: Extract text and tables from PDFs (>=0.10.0)
@@ -491,13 +776,27 @@ This API is designed to be extensible for:
 
 ## 🤝 Contributing
 
-This is a production-ready, standalone backend API. To extend functionality:
+This is a production-ready backend API with ERPNext integration. To extend functionality:
 
+**For Document Parsing:**
 1. Add new parser classes inheriting from `BaseClaudeParser`
 2. Add prompts to `config/prompts.py`
 3. Update `ParserFactory` to support new document types
-4. Add corresponding endpoints in `main.py`
-5. Write unit tests for new features
+4. Add corresponding endpoints in `app/routers/documents.py`
+5. Write unit tests for new parsers
+
+**For ERPNext Integration:**
+1. Add new workflow functions in `app/workflows/erpnext_workflows.py`
+2. Extend `ERPNextService` with new API methods if needed
+3. Add new endpoints in `app/routers/erpnext.py`
+4. Update configuration in `app/config/erpnext_config.py` if needed
+5. Write integration tests in `tests/integration/`
+
+## 📚 Additional Documentation
+
+- **[ERPNEXT_QUICKSTART.md](ERPNEXT_QUICKSTART.md)**: Complete ERPNext integration guide
+- **[TEST_DOCUMENTATION.md](TEST_DOCUMENTATION.md)**: Testing strategies and examples
+- **Swagger UI**: http://localhost:8000/docs (when server is running)
 
 ## 📞 Support
 
@@ -509,4 +808,6 @@ This project is designed for internal use as a document parsing API.
 
 ---
 
-**Built with ❤️ using FastAPI, Claude AI, and Python**
+**Built with ❤️ using FastAPI, Claude AI, ERPNext, and Python**
+
+**Version 2.0.0** - Now with ERPNext ERP Integration
