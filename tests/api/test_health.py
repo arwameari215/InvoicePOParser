@@ -12,8 +12,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'app'))
 
-from tests.base.base_test_case import BaseTestCase
-from tests.integration.api_clients.health_api_client import HealthAPIClient
+from tests.integration.helpers.base_test_case import BaseTestCase
+from tests.api.clients.health_api_client import HealthAPIClient
 from app.main import app
 from app.parser_factory import ParserFactory
 

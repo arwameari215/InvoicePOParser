@@ -187,15 +187,15 @@ jobs:
           echo "✅ All health checks passed successfully!"
       
       # ======================================================================
-      # STEP 11: Run Unit and API Tests (No ERPNext Required)
+      # STEP 11: Run Core and API Tests (No ERPNext Required)
       # ======================================================================
-      - name: 🧪 Run Unit and API Tests
+      - name: 🧪 Run Core and API Tests
         run: |
-          echo "Running unit and integration tests (without real ERPNext)..."
+          echo "Running core and API tests (without real ERPNext)..."
           echo "These tests use mocks and don't require ERPNext connection"
-          python -m unittest discover -s tests/unit -p "test_*.py" -v
-          python -m unittest discover -s tests/integration -p "test_api*.py" -v
-          echo "✅ Unit and API tests completed"
+          python -m unittest discover -s tests/core -p "test_*.py" -v
+          python -m unittest discover -s tests/api -p "test_*.py" -v
+          echo "✅ Core and API tests completed"
       
       # ======================================================================
       # STEP 12: Run ERPNext Integration Tests (Optional)
@@ -241,8 +241,8 @@ jobs:
           echo "Runner: ${{ runner.name }}"
           echo ""
           echo "Test Execution Summary:"
-          echo "  ✅ Unit tests: Completed"
-          echo "  ✅ API tests (mocked): Completed"
+          echo "  ✅ Core tests: Completed"
+          echo "  ✅ API tests: Completed"
           echo "  ⚠️  ERPNext integration: See above"
           echo "=========================================="
       

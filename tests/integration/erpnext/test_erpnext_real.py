@@ -23,7 +23,7 @@ from typing import Optional
 from datetime import datetime
 
 # Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 from app.config.erpnext_config import erpnext_config
 from app.services.erpnext_service import (
@@ -36,7 +36,7 @@ from app.services.erpnext_service import (
     ValidationError,
     ConnectionError as ERPNextConnectionError
 )
-from tests.fixtures.erpnext_fixtures import ERPNextFixtures
+from tests.integration.helpers.erpnext_fixtures import ERPNextFixtures
 
 
 def skip_if_erpnext_unavailable(test_func):

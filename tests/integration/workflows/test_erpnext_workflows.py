@@ -17,7 +17,7 @@ import sys
 from typing import Dict, Any
 
 # Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 from app.config.erpnext_config import erpnext_config
 from app.services.erpnext_service import test_connection
@@ -25,7 +25,7 @@ from app.workflows.erpnext_workflows import (
     submit_purchase_order_workflow,
     submit_sales_invoice_workflow
 )
-from tests.fixtures.erpnext_fixtures import ERPNextFixtures
+from tests.integration.helpers.erpnext_fixtures import ERPNextFixtures
 
 
 def skip_if_erpnext_unavailable(test_func):

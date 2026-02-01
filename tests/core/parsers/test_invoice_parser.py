@@ -10,11 +10,11 @@ import sys
 import os
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'app'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'app'))
 
-from tests.base.base_test_case import BaseTestCase
-from tests.base.mock_helpers import MockClaudeResponseBuilder, MockClaudeService, MockPDFFile
+from tests.integration.helpers.base_test_case import BaseTestCase
+from tests.integration.helpers.mock_helpers import MockClaudeResponseBuilder, MockClaudeService, MockPDFFile
 from app.parsers.invoice_claude_parser import InvoiceClaudeParser
 
 
