@@ -6,7 +6,7 @@ and returns structured JSON data with ERPNext integration.
 """
 
 from fastapi import FastAPI
-from typing import Dict
+from typing import Dict, Any
 import sys
 import os
 import logging
@@ -44,12 +44,12 @@ except Exception as e:
 
 
 @app.get("/")
-async def root() -> Dict[str, str]:
+async def root() -> Dict[str, Any]:
     """
     Root endpoint - API health check.
     
     Returns:
-        Dict[str, str]: Welcome message and API status.
+        Dict[str, Any]: Welcome message and API status.
     """
     return {
         "message": "DocIntelligenceAPI is running",
