@@ -78,7 +78,7 @@ jobs:
       - name: 📚 Install Dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-mock
+          pip install pytest pytest-mock pytest-cov
       
       # ======================================================================
       # STEP 6: Create Dummy API Key File
