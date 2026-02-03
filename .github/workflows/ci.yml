@@ -183,18 +183,19 @@ jobs:
       # ======================================================================
       - name: 🧪 Run Core and API Tests with Coverage
         run: |
-          echo "Running core tests with coverage..."
-          pytest tests/core -v --cov=app/parsers --cov=app/parser_factory --cov-append
+          echo "Running all core and API tests with comprehensive coverage..."
+          pytest tests/core tests/api -v \
+            --cov=app \
+            --cov-report=html \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-branch
           
-          echo "Running API tests with coverage..."
-          pytest tests/api -v --cov=app/routers --cov-append
+          echo ""
+          echo "Coverage Summary:"
+          python -m coverage report --include="app/*" --show-missing
           
-          echo "Generating combined coverage report..."
-          python -m coverage report
-          python -m coverage html
-          python -m coverage xml
-          
-          echo "✅ Core and API tests completed with coverage"
+          echo "✅ Core and API tests completed with full app coverage"
       
       # ======================================================================
       # STEP 12: Run ERPNext Integration Tests (Optional)---Seperately
