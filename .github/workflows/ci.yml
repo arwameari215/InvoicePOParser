@@ -103,83 +103,7 @@ jobs:
           pip list
       
       # ======================================================================
-      # STEP 8: Start FastAPI Server in Background***
-      # ======================================================================
-      - name: 🚀 Start FastAPI Server
-        run: |
-          echo "Starting FastAPI server on port ${{ env.API_PORT }}..."
-          nohup python -m uvicorn app.main:app --host 0.0.0.0 --port ${{ env.API_PORT }} > server.log 2>&1 &
-          echo $! > server.pid
-          echo "✅ FastAPI server started with PID: $(cat server.pid)"
-          echo "Server logs will be available in server.log"
-      
-      # ======================================================================
-      # STEP 9: Wait for Server to Be Healthy****
-      # ======================================================================
-      - name: ⏳ Wait for API Health Check
-        run: |
-          echo "Waiting for API to become healthy..."
-          ATTEMPTS=0
-          MAX_ATTEMPTS=${{ env.HEALTH_CHECK_MAX_ATTEMPTS }}
-          INTERVAL=${{ env.HEALTH_CHECK_INTERVAL }}
-          
-          while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-            ATTEMPTS=$((ATTEMPTS + 1))
-            echo "Attempt $ATTEMPTS/$MAX_ATTEMPTS: Checking health endpoint..."
-            
-            if curl -f -s http://localhost:${{ env.API_PORT }}/health > /dev/null 2>&1; then
-              echo "✅ Health check passed!"
-              echo "Server is ready and responding"
-              exit 0
-            fi
-            
-            echo "⏳ Server not ready yet, waiting ${INTERVAL}s..."
-            sleep $INTERVAL
-          done
-          
-          echo "❌ Health check failed after $MAX_ATTEMPTS attempts"
-          echo "Dumping server logs:"
-          cat server.log || echo "No server logs available"
-          exit 1
-      
-      # ======================================================================
-      # STEP 10: Validate Health Endpoint Response***
-      # ======================================================================
-      - name: 🏥 Validate Health Endpoint
-        run: |
-          echo "Validating health endpoint response..."
-          
-          RESPONSE=$(curl -s http://localhost:${{ env.API_PORT }}/health)
-          echo "Health endpoint response: $RESPONSE"
-          
-          if echo "$RESPONSE" | grep -q '"status"'; then
-            echo "✅ Health endpoint contains 'status' field"
-          else
-            echo "❌ Health endpoint missing 'status' field"
-            exit 1
-          fi
-          
-          if echo "$RESPONSE" | grep -q '"service"'; then
-            echo "✅ Health endpoint contains 'service' field"
-          else
-            echo "❌ Health endpoint missing 'service' field"
-            exit 1
-          fi
-          
-          ROOT_RESPONSE=$(curl -s http://localhost:${{ env.API_PORT }}/)
-          echo "Root endpoint response: $ROOT_RESPONSE"
-          
-          if echo "$ROOT_RESPONSE" | grep -q '"message"'; then
-            echo "✅ Root endpoint contains 'message' field"
-          else
-            echo "❌ Root endpoint missing 'message' field"
-            exit 1
-          fi
-          
-          echo "✅ All health checks passed successfully!"
-      
-      # ======================================================================
-      # STEP 11: Run Core and API Tests (No ERPNext Required)
+      # STEP 8: Run Core and API Tests (No ERPNext Required)
       # ======================================================================
       - name: 🧪 Run Core and API Tests with Coverage
         run: |
@@ -198,7 +122,7 @@ jobs:
           echo "✅ Core and API tests completed with full app coverage"
       
       # ======================================================================
-      # STEP 12: Run ERPNext Integration Tests (Optional)---Seperately
+      # STEP 9: Run ERPNext Integration Tests (Optional)---Seperately
       # ======================================================================
       - name: 🔗 Run ERPNext Integration Tests
         if: success() || failure()
@@ -223,7 +147,7 @@ jobs:
           }
       
       # ======================================================================
-      # STEP 13: Test Summary-- Allure
+      # STEP 10: Test Summary
       # ======================================================================
       - name: 📊 Test Summary
         if: always()
@@ -241,39 +165,9 @@ jobs:
           echo "  ⚠️  ERPNext integration: See above"
           echo "=========================================="
       
-      # ======================================================================
-      # STEP 14: Upload Server Logs (on failure)
-      # ======================================================================
-      - name: 📋 Upload Server Logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: server-logs-python-${{ matrix.python-version }}
-          path: server.log
-          retention-days: 7
       
       # ======================================================================
-      # STEP 15: Cleanup Background Process***
-      # ======================================================================
-      - name: 🧹 Cleanup Server Process
-        if: always()
-        run: |
-          if [ -f server.pid ]; then
-            PID=$(cat server.pid)
-            echo "Stopping FastAPI server (PID: $PID)..."
-            kill $PID 2>/dev/null || echo "Server process already stopped"
-            rm server.pid
-            echo "✅ Server process cleaned up"
-          else
-            echo "No server PID file found, skipping cleanup"
-          fi
-          
-          if [ -f server.log ]; then
-            echo "Final server log (last 50 lines):"
-            tail -50 server.log
-          fi
-      # ======================================================================
-      # STEP 16: Upload Coverage Reports to Codecov
+      # STEP 11: Upload Coverage Reports to Codecov
       # ======================================================================
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
