@@ -181,12 +181,20 @@ jobs:
       # ======================================================================
       # STEP 11: Run Core and API Tests (No ERPNext Required)
       # ======================================================================
-      - name: 🧪 Run Core and API Tests
+      - name: 🧪 Run Core and API Tests with Coverage
         run: |
-          echo "Running core and API tests with pytest (without real ERPNext)..."
-          pytest tests/core -v
-          pytest tests/api -v
-          echo "✅ Core and API tests completed"
+          echo "Running core tests with coverage..."
+          pytest tests/core -v --cov=app/parsers --cov=app/parser_factory --cov-append
+          
+          echo "Running API tests with coverage..."
+          pytest tests/api -v --cov=app/routers --cov-append
+          
+          echo "Generating combined coverage report..."
+          python -m coverage report
+          python -m coverage html
+          python -m coverage xml
+          
+          echo "✅ Core and API tests completed with coverage"
       
       # ======================================================================
       # STEP 12: Run ERPNext Integration Tests (Optional)---Seperately
