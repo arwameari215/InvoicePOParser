@@ -115,9 +115,18 @@ jobs:
           python -m coverage report --include="app/*" --show-missing
           
           echo "✅ Core and API tests completed with full app coverage"
-      
+            # ======================================================================
+      # STEP 9: Upload Coverage Reports to Codecov
       # ======================================================================
-      # STEP 9: Run ERPNext Integration Tests (Optional)---Seperately
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: true
+
+      # ======================================================================
+      # STEP 10: Run ERPNext Integration Tests (Optional)---Seperately
       # ======================================================================
       - name: 🔗 Run ERPNext Integration Tests
         if: success() || failure()
@@ -142,7 +151,7 @@ jobs:
           }
       
       # ======================================================================
-      # STEP 10: Test Summary
+      # STEP 11: Test Summary
       # ======================================================================
       - name: 📊 Test Summary
         if: always()
@@ -161,12 +170,4 @@ jobs:
           echo "=========================================="
       
       
-      # ======================================================================
-      # STEP 11: Upload Coverage Reports to Codecov
-      # ======================================================================
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          fail_ci_if_error: true
+
