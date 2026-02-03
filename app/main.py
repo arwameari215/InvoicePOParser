@@ -32,15 +32,13 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Import and include routers (after app initialization to handle import errors gracefully)
-try:
-    from app.routers import documents, erpnext
-    app.include_router(documents.router)
-    app.include_router(erpnext.router)
-    logger.info("✅ Successfully loaded all routers")
-except Exception as e:
-    logger.warning(f"⚠️ Could not load some routers: {str(e)}")
-    # API will still work with just root/health endpoints
+# Import and include routers
+# Direct imports to ensure coverage tracking works correctly
+from app.routers import documents, erpnext
+
+app.include_router(documents.router)
+app.include_router(erpnext.router)
+logger.info("✅ Successfully loaded all routers")
 
 
 @app.get("/")
