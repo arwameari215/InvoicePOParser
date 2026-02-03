@@ -24,3 +24,7 @@ python-dotenv>=1.0.0
 # AI/ML
 anthropic>=0.18.0
 pyyaml>=6.0.1
+
+pytest
+pytest-cov
+pytest-html
