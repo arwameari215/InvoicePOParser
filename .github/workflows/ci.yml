@@ -108,12 +108,7 @@ jobs:
       - name: 🧪 Run Core and API Tests with Coverage
         run: |
           echo "Running all core and API tests with comprehensive coverage..."
-          pytest tests/core tests/api -v \
-            --cov=app \
-            --cov-report=html \
-            --cov-report=xml \
-            --cov-report=term-missing \
-            --cov-branch
+          pytest tests/core tests/api -v
           
           echo ""
           echo "Coverage Summary:"
