@@ -242,7 +242,7 @@ def update_entity(doctype: str, name: str, payload: Dict[str, Any]) -> Dict[str,
     return response.get('data')
 
 
-def test_connection() -> Dict[str, Any]:
+def check_erpnext_connection() -> Dict[str, Any]:
     """
     Test connection to ERPNext.
     

@@ -40,6 +40,10 @@ env/
 .coverage
 htmlcov/
 .tox/
+allure-results/
+allure-report/
+allure-history/
+.allure/
 
 # Uploads
 tmp/

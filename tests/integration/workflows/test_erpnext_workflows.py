@@ -20,7 +20,7 @@ from typing import Dict, Any
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 from app.config.erpnext_config import erpnext_config
-from app.services.erpnext_service import test_connection
+from app.services.erpnext_service import check_erpnext_connection
 from app.workflows.erpnext_workflows import (
     submit_purchase_order_workflow,
     submit_sales_invoice_workflow
@@ -34,7 +34,7 @@ def skip_if_erpnext_unavailable(test_func):
         if not erpnext_config.is_configured():
             self.skipTest("ERPNext not configured")
         
-        connection_result = test_connection()
+        connection_result = check_erpnext_connection()
         if not connection_result.get('success'):
             self.skipTest(f"ERPNext not reachable: {connection_result.get('error')}")
         

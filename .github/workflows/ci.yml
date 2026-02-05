@@ -78,7 +78,7 @@ jobs:
       - name: 📚 Install Dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-mock pytest-cov
+          pip install pytest pytest-mock pytest-cov allure-pytest
       
       # ======================================================================
       # STEP 6: Create Dummy API Key File
@@ -108,15 +108,45 @@ jobs:
       - name: 🧪 Run Core and API Tests with Coverage
         run: |
           echo "Running all core and API tests with comprehensive coverage..."
-          pytest tests/core tests/api -v
+          pytest tests/core tests/api -v --alluredir=allure-results
           
           echo ""
           echo "Coverage Summary:"
           python -m coverage report --include="app/*" --show-missing
           
           echo "✅ Core and API tests completed with full app coverage"
-            # ======================================================================
-      # STEP 9: Upload Coverage Reports to Codecov
+      # ======================================================================
+      # STEP 9: Generate Allure Environment Metadata
+      # ======================================================================
+      - name: 📝 Generate Allure Environment Info
+        if: always()
+        run: |
+          mkdir -p allure-results
+          cat > allure-results/environment.properties << EOF
+          Python.Version=${{ matrix.python-version }}
+          OS=${{ runner.os }}
+          Test.Execution.Date=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          CI.Run.ID=${{ github.run_id }}
+          CI.Run.Number=${{ github.run_number }}
+          Branch=${{ github.ref_name }}
+          Commit=${{ github.sha }}
+          Repository=${{ github.repository }}
+          EOF
+          echo "✅ Allure environment metadata generated"
+      
+      # ======================================================================
+      # STEP 10: Upload Allure Results
+      # ======================================================================
+      - name: 📤 Upload Allure Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-python-${{ matrix.python-version }}
+          path: allure-results/
+          retention-days: 30
+      
+      # ======================================================================
+      # STEP 11: Upload Coverage Reports to Codecov
       # ======================================================================
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
@@ -126,7 +156,7 @@ jobs:
           fail_ci_if_error: true
 
       # ======================================================================
-      # STEP 10: Run ERPNext Integration Tests (Optional)---Seperately
+      # STEP 12: Run ERPNext Integration Tests (Optional)---Seperately
       # ======================================================================
       - name: 🔗 Run ERPNext Integration Tests
         if: success() || failure()
@@ -151,7 +181,7 @@ jobs:
           }
       
       # ======================================================================
-      # STEP 11: Test Summary
+      # STEP 13: Test Summary
       # ======================================================================
       - name: 📊 Test Summary
         if: always()
