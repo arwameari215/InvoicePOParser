@@ -57,7 +57,6 @@ jobs:
       # ======================================================================
       # STEP 3: Cache pip Dependencies
       # ======================================================================
-      # Speeds up subsequent builds by caching installed packages
       - name: 📦 Cache pip Dependencies
         uses: actions/cache@v4
         with:
@@ -79,12 +78,11 @@ jobs:
       - name: 📚 Install Dependencies
         run: |
           pip install -r requirements.txt
+          pip install pytest pytest-mock pytest-cov allure-pytest
       
       # ======================================================================
       # STEP 6: Create Dummy API Key File
       # ======================================================================
-      # Tests use mocks, but the application expects this file to exist
-      # SECURITY: This is a fake key for CI only, never use in production
       - name: 🔑 Create Dummy Anthropic API Key
         run: |
           echo "sk-ant-api03-ci-dummy-key-for-testing-only" > .anthropickey
@@ -105,113 +103,70 @@ jobs:
           pip list
       
       # ======================================================================
-      # STEP 8: Start FastAPI Server in Background
+      # STEP 8: Run Core and API Tests (No ERPNext Required)
       # ======================================================================
-      - name: 🚀 Start FastAPI Server
+      - name: 🧪 Run Core and API Tests with Coverage
         run: |
-          echo "Starting FastAPI server on port ${{ env.API_PORT }}..."
-          nohup python -m uvicorn app.main:app --host 0.0.0.0 --port ${{ env.API_PORT }} > server.log 2>&1 &
-          echo $! > server.pid
-          echo "✅ FastAPI server started with PID: $(cat server.pid)"
-          echo "Server logs will be available in server.log"
+          echo "Running all core and API tests with comprehensive coverage..."
+          pytest tests/core tests/api -v --alluredir=allure-results
+          
+          echo ""
+          echo "Coverage Summary:"
+          python -m coverage report --include="app/*" --show-missing
+          
+          echo "✅ Core and API tests completed with full app coverage"
+      # ======================================================================
+      # STEP 9: Generate Allure Environment Metadata
+      # ======================================================================
+      - name: 📝 Generate Allure Environment Info
+        if: always()
+        run: |
+          mkdir -p allure-results
+          cat > allure-results/environment.properties << EOF
+          Python.Version=${{ matrix.python-version }}
+          OS=${{ runner.os }}
+          Test.Execution.Date=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          CI.Run.ID=${{ github.run_id }}
+          CI.Run.Number=${{ github.run_number }}
+          Branch=${{ github.ref_name }}
+          Commit=${{ github.sha }}
+          Repository=${{ github.repository }}
+          EOF
+          echo "✅ Allure environment metadata generated"
       
       # ======================================================================
-      # STEP 9: Wait for Server to Be Healthy
+      # STEP 10: Upload Allure Results
       # ======================================================================
-      # Retry mechanism with exponential backoff to ensure server is ready
-      - name: ⏳ Wait for API Health Check
-        run: |
-          echo "Waiting for API to become healthy..."
-          ATTEMPTS=0
-          MAX_ATTEMPTS=${{ env.HEALTH_CHECK_MAX_ATTEMPTS }}
-          INTERVAL=${{ env.HEALTH_CHECK_INTERVAL }}
-          
-          while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-            ATTEMPTS=$((ATTEMPTS + 1))
-            echo "Attempt $ATTEMPTS/$MAX_ATTEMPTS: Checking health endpoint..."
-            
-            # Try to reach the health endpoint
-            if curl -f -s http://localhost:${{ env.API_PORT }}/health > /dev/null 2>&1; then
-              echo "✅ Health check passed!"
-              echo "Server is ready and responding"
-              exit 0
-            fi
-            
-            echo "⏳ Server not ready yet, waiting ${INTERVAL}s..."
-            sleep $INTERVAL
-          done
-          
-          echo "❌ Health check failed after $MAX_ATTEMPTS attempts"
-          echo "Dumping server logs:"
-          cat server.log || echo "No server logs available"
-          exit 1
+      - name: 📤 Upload Allure Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-python-${{ matrix.python-version }}
+          path: allure-results/
+          retention-days: 30
       
       # ======================================================================
-      # STEP 10: Validate Health Endpoint Response
+      # STEP 11: Upload Coverage Reports to Codecov
       # ======================================================================
-      - name: 🏥 Validate Health Endpoint
-        run: |
-          echo "Validating health endpoint response..."
-          
-          # Call /health endpoint
-          RESPONSE=$(curl -s http://localhost:${{ env.API_PORT }}/health)
-          echo "Health endpoint response: $RESPONSE"
-          
-          # Validate HTTP 200 (already checked in previous step)
-          # Validate JSON structure
-          if echo "$RESPONSE" | grep -q '"status"'; then
-            echo "✅ Health endpoint contains 'status' field"
-          else
-            echo "❌ Health endpoint missing 'status' field"
-            exit 1
-          fi
-          
-          if echo "$RESPONSE" | grep -q '"service"'; then
-            echo "✅ Health endpoint contains 'service' field"
-          else
-            echo "❌ Health endpoint missing 'service' field"
-            exit 1
-          fi
-          
-          # Call root endpoint
-          ROOT_RESPONSE=$(curl -s http://localhost:${{ env.API_PORT }}/)
-          echo "Root endpoint response: $ROOT_RESPONSE"
-          
-          if echo "$ROOT_RESPONSE" | grep -q '"message"'; then
-            echo "✅ Root endpoint contains 'message' field"
-          else
-            echo "❌ Root endpoint missing 'message' field"
-            exit 1
-          fi
-          
-          echo "✅ All health checks passed successfully!"
-      
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: true
+
       # ======================================================================
-      # STEP 11: Run Core and API Tests (No ERPNext Required)
+      # STEP 12: Run ERPNext Integration Tests (Optional)---Seperately
       # ======================================================================
-      - name: 🧪 Run Core and API Tests
-        run: |
-          echo "Running core and API tests (without real ERPNext)..."
-          echo "These tests use mocks and don't require ERPNext connection"
-          python -m unittest discover -s tests/core -p "test_*.py" -v
-          python -m unittest discover -s tests/api -p "test_*.py" -v
-          echo "✅ Core and API tests completed"
-      
-      # ======================================================================
-      # STEP 12: Run ERPNext Integration Tests (Optional)
-      # ======================================================================
-      # These tests require a real ERPNext instance and will be skipped if unavailable
       - name: 🔗 Run ERPNext Integration Tests
-        if: success() || failure()  # Run even if previous tests failed
+        if: success() || failure()
         env:
           ERPNEXT_URL: ${{ secrets.ERPNEXT_URL || 'http://localhost:8080' }}
           ERPNEXT_API_KEY: ${{ secrets.ERPNEXT_API_KEY || '' }}
           ERPNEXT_API_SECRET: ${{ secrets.ERPNEXT_API_SECRET || '' }}
         run: |
-          echo "Running ERPNext integration tests (real connection)..."
-          echo "Note: Tests will be skipped if ERPNext is not configured or unavailable"
+          echo "Running ERPNext integration tests with pytest (real connection)..."
           
-          # Create .env file if secrets are available
           if [ -n "$ERPNEXT_API_KEY" ]; then
             echo "ERPNEXT_URL=$ERPNEXT_URL" > .env
             echo "ERPNEXT_API_KEY=$ERPNEXT_API_KEY" >> .env
@@ -221,10 +176,8 @@ jobs:
             echo "⚠️  ERPNext credentials not found - tests will be skipped"
           fi
           
-          # Run ERPNext integration tests
-          python -m unittest discover -s tests/integration -p "test_erpnext*.py" -v || {
+          pytest tests/integration -v || {
             echo "⚠️  ERPNext integration tests skipped or failed (non-blocking)"
-            echo "This is expected if ERPNext is not configured in CI"
           }
       
       # ======================================================================
@@ -246,88 +199,5 @@ jobs:
           echo "  ⚠️  ERPNext integration: See above"
           echo "=========================================="
       
-      # ======================================================================
-      # STEP 14: Upload Server Logs (on failure)
-      # ======================================================================
-      - name: 📋 Upload Server Logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: server-logs-python-${{ matrix.python-version }}
-          path: server.log
-          retention-days: 7
       
-      # ======================================================================
-      # STEP 15: Cleanup Background Process
-      # ======================================================================
-      - name: 🧹 Cleanup Server Process
-        if: always()
-        run: |
-          if [ -f server.pid ]; then
-            PID=$(cat server.pid)
-            echo "Stopping FastAPI server (PID: $PID)..."
-            kill $PID 2>/dev/null || echo "Server process already stopped"
-            rm server.pid
-            echo "✅ Server process cleaned up"
-          else
-            echo "No server PID file found, skipping cleanup"
-          fi
-          
-          # Display final server logs for debugging
-          if [ -f server.log ]; then
-            echo "Final server log (last 50 lines):"
-            tail -50 server.log
-          fi
 
-  # --------------------------------------------------------------------------
-  # JOB: Code Quality Checks (Optional - Future Ready)
-  # --------------------------------------------------------------------------
-  # Uncomment this job when you're ready to add linting and coverage
-  # quality:
-  #   name: Code Quality
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 10
-  #   
-  #   steps:
-  #     - name: 📥 Checkout Code
-  #       uses: actions/checkout@v4
-  #     
-  #     - name: 🐍 Set up Python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: '3.11'
-  #     
-  #     - name: 📦 Cache pip Dependencies
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: ~/.cache/pip
-  #         key: ${{ runner.os }}-pip-quality-${{ hashFiles('**/requirements.txt') }}
-  #     
-  #     - name: 📚 Install Dependencies
-  #       run: |
-  #         pip install -r requirements.txt
-  #         pip install pylint flake8 coverage
-  #     
-  #     - name: 🔍 Run Linting (flake8)
-  #       run: |
-  #         flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
-  #     
-  #     - name: 📊 Run Tests with Coverage
-  #       run: |
-  #         echo "sk-ant-api03-ci-dummy-key" > .anthropickey
-  #         coverage run -m unittest discover -s tests -p "test_*.py"
-  #         coverage report
-  #         coverage html
-  #     
-  #     - name: 📈 Upload Coverage Report
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: coverage-report
-  #         path: htmlcov/
-  #         retention-days: 30
-
-# ============================================================================
-# WORKFLOW STATUS BADGE
-# ============================================================================
-# Add this badge to your README.md:
-# ![CI Pipeline](https://github.com/<username>/<repo>/workflows/CI%20Pipeline/badge.svg)

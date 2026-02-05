@@ -14,7 +14,7 @@ from app.workflows.erpnext_workflows import (
     submit_sales_invoice_workflow
 )
 from app.services.erpnext_service import (
-    test_connection,
+    check_erpnext_connection,
     get_entity,
     ValidationError,
     ERPNextAPIError,
@@ -43,7 +43,7 @@ async def test_erpnext_connection() -> JSONResponse:
     """
     logger.info("Testing ERPNext connection")
     
-    result = test_connection()
+    result = check_erpnext_connection()
     
     status_code = 200 if result['success'] else 500
     return JSONResponse(content=result, status_code=status_code)

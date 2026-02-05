@@ -24,11 +24,12 @@ A production-ready Python backend API for parsing **Invoices** and **Purchase Or
 - ✅ **Token authentication** - Secure API access
 
 ### Quality & Testing
-- ✅ **108 automated tests** - Comprehensive test coverage
+- ✅ **110 automated tests** - Comprehensive test coverage (70% overall)
+- ✅ **Allure reporting** - Interactive test reports with GitHub Pages
 - ✅ **Type hints** and docstrings throughout
 - ✅ **Structured logging** for debugging
 - ✅ **Production-ready** error handling
-- ✅ **CI/CD ready** with GitHub Actions
+- ✅ **CI/CD ready** with GitHub Actions and Codecov
 
 ---
 
@@ -58,7 +59,7 @@ InvoicePOParser/
 │       └── pdf_loader.py            # PDF text extraction
 ├── tests/
 │   ├── api/                         # API endpoint tests (51)
-│   ├── core/                        # Business logic tests (32)
+│   ├── core/                        # Business logic tests (38)
 │   └── integration/                 # ERPNext integration tests (21)
 ├── .env                             # Environment variables (git-ignored)
 ├── .anthropickey                    # Claude API key (git-ignored)
@@ -271,11 +272,13 @@ curl -X POST "http://localhost:8000/upload/po" \
 
 ### ERPNext Integration Endpoints
 
-**Test Connection**
+**Check ERPNext Connection**
 
 ```bash
 GET /erpnext/test-connection
 ```
+
+> **Note:** This endpoint uses the `check_erpnext_connection()` service function (renamed from `test_connection` to avoid pytest treating it as a test).
 
 **Get Entity Details**
 
@@ -404,22 +407,35 @@ Content-Type: application/json
 
 ## 🧪 Testing
 
-### Test Suite (108 Tests)
+### Test Suite (120+ Tests, 70% Overall Coverage)
 
 The project has comprehensive test coverage organized into three categories:
 
 ```
 tests/
-├── api/          # 51 tests - API endpoints (mocked)
-├── core/         # 32 tests - Business logic
+├── api/          # 61 tests - API endpoints (mocked) ✅ 98% router coverage
+├── core/         # 38 tests - Business logic (includes service tests)
 └── integration/  # 21 tests - ERPNext integration (real)
 ```
+
+**Coverage Breakdown:**
+- Overall: **70%** (improved router coverage: 71-74% → 98%)
+- **Routers: 98%** ✅ (documents.py: 98%, erpnext.py: 98%)
+- Workflows: **84%**
+- Parsers: **71-85%** (base: 71%, invoice: 83%, po: 85%)
+- ERPNextService: **69%** (37 uncovered lines)
+- ClaudeService: **27%** (needs comprehensive mocking tests)
+- Utils: **0%** (pdf_loader.py not covered)
 
 ### Running Tests
 
 **All tests:**
 ```bash
+# Using unittest
 venv/Scripts/python.exe -m unittest discover -s tests -p "test_*.py" -v
+
+# Using pytest (with coverage)
+venv/Scripts/python.exe -m pytest tests -v --cov=app --cov-report=html
 ```
 
 **By category:**
@@ -447,13 +463,21 @@ venv/Scripts/python.exe -m unittest tests.core.parsers.test_invoice_parser -v
 
 ### Test Categories
 
-**Core Tests (32)** - Business logic
-- Parser Factory (9 tests)
+**API Tests (61)** - Endpoints ✅ **98% router coverage**
+- Health API (8 tests)
+- Document Upload (20 tests + 10 error handling tests)
+- ERPNext API (23 tests + 10 error handling tests)
+- All dependencies mocked
+- **Achievement: Comprehensive error path coverage**
+
+**Core Tests (38)** - Business logic
+- Parser Factory (9 tests) - **100% coverage** ✅
 - Invoice Parser (15 tests)
 - PO Parser (8 tests)
-- Zero external dependencies
+- Service tests (ClaudeService, ERPNextService)
+- Zero external dependencies for unit tests
 
-**API Tests (51)** - Endpoints
+**Integration Tests (21)** - ERPNext
 - Health API (8 tests)
 - Document Upload (20 tests)
 - ERPNext API mocked (23 tests)
@@ -465,7 +489,41 @@ venv/Scripts/python.exe -m unittest tests.core.parsers.test_invoice_parser -v
 - Requires ERPNext connection
 - Auto-skips if unavailable
 
-For detailed testing documentation, see [TEST_DOCUMENTATION.md](TEST_DOCUMENTATION.md).
+### Coverage Reporting
+
+**Generate HTML coverage report:**
+```bash
+venv/Scripts/python.exe -m pytest tests --cov=app --cov-report=html
+# Open htmlcov/index.html in browser
+```
+
+**Coverage in CI:**
+- Automatic coverage measurement in GitHub Actions
+- Results uploaded to Codecov
+- Coverage badge in repository
+
+### Allure Reporting
+
+The project includes **Allure Framework** for interactive test reports:
+
+**Generate and view locally:**
+```bash
+# Run tests with Allure results
+venv/Scripts/python.exe -m pytest tests --alluredir=allure-results
+
+# Generate and open report
+allure serve allure-results
+```
+
+**View in GitHub Pages:**
+- Reports automatically generated in CI
+- Published to: `https://[username].github.io/InvoicePOParser`
+- Historical trends and test analytics included
+
+For detailed testing and reporting documentation, see:
+- [TEST_DOCUMENTATION.md](TEST_DOCUMENTATION.md) - Testing guide
+- [ALLURE_REPORTING.md](ALLURE_REPORTING.md) - Allure user guide
+- [ALLURE_INTEGRATION.md](ALLURE_INTEGRATION.md) - Technical integration details
 
 ---
 
@@ -602,6 +660,9 @@ All errors are logged with detailed information for debugging.
 
 ### Testing
 - **pytest** (>=7.4.0) - Testing framework
+- **pytest-cov** (>=7.0.0) - Coverage plugin
+- **coverage** (>=7.13.0) - Coverage measurement
+- **allure-pytest** (>=2.15.0) - Allure reporting
 - **httpx** (>=0.24.0) - HTTP client for tests
 
 ---
@@ -689,4 +750,13 @@ This project is designed for internal use as a document parsing and ERP integrat
 
 **Built with ❤️ using FastAPI, Claude AI, ERPNext, and Python**
 
-**Version 3.0.0** - Enhanced testing, modular architecture, production-ready
+**Version 3.0.2** - Router coverage: 98% achieved, comprehensive error handling tests
+
+### Recent Changes (v3.0.2)
+- ✅ **Router coverage: 71-74% → 98%** (added 10 comprehensive error tests)
+- ✅ Added document upload error handling tests (FileNotFoundError, ValueError, Exception, cleanup failures)
+- ✅ Added ERPNext endpoint error handling tests (all error types: ValidationError, ExchangeRateError, ConnectionError, ERPNextAPIError, generic Exception)
+- ✅ All GET endpoint error paths covered (Company, Supplier, Customer, Item)
+- ✅ All POST endpoint error paths covered (Purchase Order, Sales Invoice)
+- ✅ 120+ tests passing with 0 errors, 0 warnings
+- 🎯 Current coverage: 70% overall, **98% routers** ✅

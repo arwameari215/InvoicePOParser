@@ -36,11 +36,11 @@ class TestERPNextAPIEndpoints(unittest.TestCase):
     # Connection Test Endpoint
     # ========================================================================
     
-    @patch('app.routers.erpnext.test_connection')
-    def test_erpnext_test_connection_success(self, mock_test_connection):
+    @patch('app.routers.erpnext.check_erpnext_connection')
+    def test_erpnext_test_connection_success(self, mock_check_connection):
         """Test /erpnext/test-connection endpoint with successful connection."""
         # Mock successful connection
-        mock_test_connection.return_value = {
+        mock_check_connection.return_value = {
             'success': True,
             'message': 'Successfully connected to ERPNext'
         }
@@ -52,11 +52,11 @@ class TestERPNextAPIEndpoints(unittest.TestCase):
         self.assertTrue(data['success'])
         self.assertIn('Successfully connected', data['message'])
     
-    @patch('app.routers.erpnext.test_connection')
-    def test_erpnext_test_connection_failure(self, mock_test_connection):
+    @patch('app.routers.erpnext.check_erpnext_connection')
+    def test_erpnext_test_connection_failure(self, mock_check_connection):
         """Test /erpnext/test-connection endpoint with failed connection."""
         # Mock failed connection
-        mock_test_connection.return_value = {
+        mock_check_connection.return_value = {
             'success': False,
             'error': 'Connection refused'
         }

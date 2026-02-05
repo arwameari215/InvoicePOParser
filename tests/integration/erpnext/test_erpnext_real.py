@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 from app.config.erpnext_config import erpnext_config
 from app.services.erpnext_service import (
-    test_connection,
+    check_erpnext_connection,
     get_entity,
     create_entity,
     update_entity,
@@ -50,7 +50,7 @@ def skip_if_erpnext_unavailable(test_func):
             self.skipTest("ERPNext not configured (missing credentials in .env)")
         
         # Try to connect
-        connection_result = test_connection()
+        connection_result = check_erpnext_connection()
         if not connection_result.get('success'):
             self.skipTest(f"ERPNext not reachable: {connection_result.get('error')}")
         
@@ -71,7 +71,7 @@ class TestERPNextConnection(unittest.TestCase):
     @skip_if_erpnext_unavailable
     def test_connection_to_erpnext(self):
         """Test that we can connect to ERPNext successfully."""
-        result = test_connection()
+        result = check_erpnext_connection()
         
         self.assertTrue(result['success'])
         self.assertIn('message', result)
@@ -105,7 +105,7 @@ class TestERPNextEntityOperations(unittest.TestCase):
         if not erpnext_config.is_configured():
             raise unittest.SkipTest("ERPNext not configured")
         
-        connection_result = test_connection()
+        connection_result = check_erpnext_connection()
         if not connection_result.get('success'):
             raise unittest.SkipTest(f"ERPNext not reachable: {connection_result.get('error')}")
     
