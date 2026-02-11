@@ -55,8 +55,6 @@ InvoicePOParser/
 │   │   ├── base_claude_parser.py    # Abstract base class
 │   │   ├── invoice_claude_parser.py # Invoice parser
 │   │   └── po_claude_parser.py      # PO parser
-│   └── utils/
-│       └── pdf_loader.py            # PDF text extraction
 ├── tests/
 │   ├── api/                         # API endpoint tests (51)
 │   ├── core/                        # Business logic tests (38)
@@ -425,7 +423,6 @@ tests/
 - Parsers: **71-85%** (base: 71%, invoice: 83%, po: 85%)
 - ERPNextService: **69%** (37 uncovered lines)
 - ClaudeService: **27%** (needs comprehensive mocking tests)
-- Utils: **0%** (pdf_loader.py not covered)
 
 ### Running Tests
 

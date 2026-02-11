@@ -18,7 +18,6 @@
 - Parser factory and Claude parsers in app/parsers
 - Service layers in app/services
 - ERPNext workflows in app/workflows
-- Utilities in app/utils
 - Configuration in app/config
 - CLI/app startup in app/main.py
 
@@ -27,7 +26,6 @@
 - Third‑party service uptime
 
 ## 3. Test Types
-- Unit tests: parsers, services, utils, workflows, config
 - API tests: in‑process FastAPI tests using TestClient
 - Integration tests: ERPNext connectivity (optional, non‑blocking in CI)
 - Regression tests: critical upload and ERPNext endpoint paths
